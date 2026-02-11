@@ -162,6 +162,65 @@ def extract_bigrams(texts, top_n=20):
     return bigram_counts.most_common(top_n)
 
 
+def cluster_reviews_by_theme(reviews_df, rating_range, top_n=5):
+    subset = reviews_df[reviews_df["rating"].between(rating_range[0], rating_range[1])].copy()
+    if subset.empty:
+        return []
+
+    texts = (subset["title"].fillna("") + " " + subset["review"].fillna("")).tolist()
+    bigrams = extract_bigrams(texts, top_n=50)
+    keywords = extract_keywords(texts, top_n=50)
+
+    kw_dict = dict(keywords)
+    bg_dict = {f"{a} {b}": c for (a, b), c in bigrams}
+
+    themes = []
+    used_reviews = set()
+
+    top_phrases = list(bg_dict.items())[:top_n * 3]
+
+    for phrase, phrase_count in top_phrases:
+        if len(themes) >= top_n:
+            break
+
+        phrase_words = phrase.split()
+        matching = subset[
+            subset.apply(
+                lambda r: any(
+                    w in (str(r["title"]).lower() + " " + str(r["review"]).lower())
+                    for w in phrase_words
+                ),
+                axis=1,
+            )
+        ]
+
+        matching = matching[~matching.index.isin(used_reviews)]
+        if matching.empty:
+            continue
+
+        best = matching.sort_values("date", ascending=False).iloc[0]
+        used_reviews.add(best.name)
+
+        related_words = []
+        review_text = (str(best["title"]) + " " + str(best["review"])).lower()
+        for kw, cnt in keywords:
+            if kw in review_text and kw not in phrase_words and len(related_words) < 3:
+                related_words.append(kw)
+
+        themes.append({
+            "theme": phrase,
+            "mentions": phrase_count,
+            "example_title": best["title"],
+            "example_review": best["review"],
+            "example_rating": best["rating"],
+            "example_date": best["date"].strftime("%Y-%m-%d") if best["date"] else "",
+            "example_author": best["author"],
+            "related_words": related_words,
+        })
+
+    return themes
+
+
 with st.sidebar:
     st.header("Configuration")
     app_id = st.text_input("App Store App ID", value="", placeholder="e.g. 284882215")
@@ -188,14 +247,14 @@ with st.sidebar:
         output_filename += ".xlsx"
     fetch_button = st.button("Fetch Reviews", type="primary", disabled=not app_id.strip())
 
-active_page = st.tabs(["📋 Reviews", "💡 Insights"])
+tabs = st.tabs(["📋 Reviews", "💡 Insights"])
 
 if fetch_button:
     if not app_id.strip():
         st.error("Please enter a valid App Store App ID.")
     else:
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_days)
-        with active_page[0]:
+        with tabs[0]:
             progress_bar = st.progress(0, text="Starting...")
             status_text = st.empty()
 
@@ -219,22 +278,64 @@ if fetch_button:
 
 df = st.session_state.reviews_df
 
-with active_page[0]:
+with tabs[0]:
     if df is None or df.empty:
         if st.session_state.fetch_done:
             st.info("No reviews were found. Try adjusting your settings in the sidebar.")
         else:
             st.info("Configure your App ID and settings in the sidebar, then click **Fetch Reviews** to get started.")
     else:
-        period_label = f"{time_days} days" if time_days < 365 else "last year"
-        st.success(f"**{len(df)}** reviews fetched from the {period_label}.")
+        total = len(df)
+        avg = df["rating"].mean()
+
+        st.markdown(f"### Overall Score: {'⭐' * round(avg)} **{avg:.1f}** / 5")
+        st.caption(f"Based on **{total}** reviews")
 
         col1, col2, col3, col4, col5 = st.columns(5)
         for i, col in enumerate([col1, col2, col3, col4, col5], start=1):
             count = len(df[df["rating"] == i])
-            col.metric(f"{'⭐' * i}", count)
+            pct = count / total * 100 if total > 0 else 0
+            col.metric(f"{'⭐' * i}", f"{count} ({pct:.0f}%)")
 
-        st.subheader("Filter & Preview")
+        st.divider()
+
+        st.subheader("Rating Distribution")
+        rating_counts = df["rating"].value_counts().sort_index()
+        chart_df = pd.DataFrame({
+            "Rating": [f"{'⭐' * i}" for i in rating_counts.index],
+            "Count": rating_counts.values,
+        })
+        st.bar_chart(chart_df, x="Rating", y="Count")
+
+        st.divider()
+
+        st.subheader("Drilldown by Rating")
+        selected_rating = st.selectbox(
+            "Select a rating to explore",
+            options=[5, 4, 3, 2, 1],
+            format_func=lambda x: f"{'⭐' * x} ({len(df[df['rating'] == x])} reviews)",
+        )
+
+        drilldown = df[df["rating"] == selected_rating].copy()
+        if drilldown.empty:
+            st.info(f"No {'⭐' * selected_rating} reviews.")
+        else:
+            dd_avg_len = drilldown["review"].str.len().mean()
+            dd_versions = drilldown["version"].value_counts().head(3)
+
+            dc1, dc2, dc3 = st.columns(3)
+            dc1.metric(f"{'⭐' * selected_rating} Reviews", len(drilldown))
+            dc2.metric("Avg Review Length", f"{dd_avg_len:.0f} chars")
+            top_ver = dd_versions.index[0] if not dd_versions.empty else "N/A"
+            dc3.metric("Top Version", top_ver)
+
+            drilldown_display = drilldown[["date", "title", "review", "author", "version"]].copy()
+            drilldown_display["date"] = drilldown_display["date"].dt.strftime("%Y-%m-%d")
+            st.dataframe(drilldown_display, use_container_width=True, height=350)
+
+        st.divider()
+
+        st.subheader("All Reviews")
         filter_cols = st.columns([2, 2])
         with filter_cols[0]:
             rating_filter = st.multiselect("Filter by rating", [1, 2, 3, 4, 5], default=[1, 2, 3, 4, 5])
@@ -258,131 +359,72 @@ with active_page[0]:
             type="primary",
         )
 
-with active_page[1]:
+with tabs[1]:
     if df is None or df.empty:
         if st.session_state.fetch_done:
             st.info("No reviews to analyze. Try adjusting your settings.")
         else:
             st.info("Fetch reviews first using the sidebar to see insights here.")
     else:
-        avg_rating = df["rating"].mean()
         total = len(df)
+        avg_rating = df["rating"].mean()
+        negative_pct = len(df[df["rating"] <= 2]) / total * 100
+        positive_pct = len(df[df["rating"] >= 4]) / total * 100
 
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Total Reviews", total)
-        m2.metric("Average Rating", f"{avg_rating:.1f} ⭐")
-        m3.metric("Most Common Rating", f"{df['rating'].mode().iloc[0]} ⭐")
-        positive = len(df[df["rating"] >= 4])
-        m4.metric("Positive (4-5⭐)", f"{positive / total * 100:.0f}%")
-
-        st.divider()
-
-        st.subheader("Rating Distribution")
-        rating_counts = df["rating"].value_counts().sort_index()
-        chart_df = pd.DataFrame({
-            "Rating": [f"{'⭐' * i}" for i in rating_counts.index],
-            "Count": rating_counts.values,
-        })
-        st.bar_chart(chart_df, x="Rating", y="Count")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Average Rating", f"{avg_rating:.1f} ⭐")
+        m2.metric("Positive (4-5⭐)", f"{positive_pct:.0f}%")
+        m3.metric("Negative (1-2⭐)", f"{negative_pct:.0f}%")
 
         st.divider()
 
-        st.subheader("Reviews Over Time")
-        time_df = df.copy()
-        time_df["month"] = time_df["date"].dt.to_period("M").dt.to_timestamp()
-        monthly = time_df.groupby("month").agg(
-            count=("rating", "size"),
-            avg_rating=("rating", "mean"),
-        ).reset_index()
-        monthly.columns = ["Month", "Reviews", "Avg Rating"]
+        st.subheader("🔴 Top 5 Problems")
+        st.caption("The most common complaints and pain points users mention in negative reviews (1-2 stars).")
 
-        tcol1, tcol2 = st.columns(2)
-        with tcol1:
-            st.markdown("**Review volume per month**")
-            st.bar_chart(monthly, x="Month", y="Reviews")
-        with tcol2:
-            st.markdown("**Average rating per month**")
-            st.line_chart(monthly, x="Month", y="Avg Rating")
-
-        st.divider()
-
-        st.subheader("Top Keywords")
-        st.caption("Most frequently mentioned words across all reviews (stop words removed).")
-
-        all_texts = (df["title"].fillna("") + " " + df["review"].fillna("")).tolist()
-
-        kcol1, kcol2 = st.columns(2)
-
-        with kcol1:
-            st.markdown("**Single words**")
-            keywords = extract_keywords(all_texts, top_n=25)
-            if keywords:
-                kw_df = pd.DataFrame(keywords, columns=["Word", "Count"])
-                st.dataframe(kw_df, use_container_width=True, hide_index=True)
-
-        with kcol2:
-            st.markdown("**Common phrases (2 words)**")
-            bigrams = extract_bigrams(all_texts, top_n=20)
-            if bigrams:
-                bg_df = pd.DataFrame(
-                    [(f"{a} {b}", c) for (a, b), c in bigrams],
-                    columns=["Phrase", "Count"],
-                )
-                st.dataframe(bg_df, use_container_width=True, hide_index=True)
-
-        st.divider()
-
-        st.subheader("Negative Review Themes (1-2 ⭐)")
-        st.caption("Common words in low-rated reviews — these often highlight pain points and feature requests.")
-        neg_df = df[df["rating"] <= 2]
-        if neg_df.empty:
-            st.success("No negative reviews found!")
+        problems = cluster_reviews_by_theme(df, (1, 2), top_n=5)
+        if not problems:
+            st.success("No significant problems found in the reviews!")
         else:
-            neg_texts = (neg_df["title"].fillna("") + " " + neg_df["review"].fillna("")).tolist()
-            neg_kw = extract_keywords(neg_texts, top_n=20)
-            neg_bg = extract_bigrams(neg_texts, top_n=15)
+            for idx, problem in enumerate(problems, 1):
+                with st.expander(
+                    f"**{idx}. \"{problem['theme']}\"** — mentioned {problem['mentions']} times",
+                    expanded=(idx <= 2),
+                ):
+                    if problem["related_words"]:
+                        st.markdown(f"**Related topics:** {', '.join(problem['related_words'])}")
 
-            ncol1, ncol2 = st.columns(2)
-            with ncol1:
-                st.markdown("**Pain point keywords**")
-                if neg_kw:
-                    nk_df = pd.DataFrame(neg_kw, columns=["Word", "Count"])
-                    st.dataframe(nk_df, use_container_width=True, hide_index=True)
-            with ncol2:
-                st.markdown("**Pain point phrases**")
-                if neg_bg:
-                    nb_df = pd.DataFrame(
-                        [(f"{a} {b}", c) for (a, b), c in neg_bg],
-                        columns=["Phrase", "Count"],
+                    st.markdown("**Example review:**")
+                    st.markdown(
+                        f"> **{problem['example_title']}** "
+                        f"({'⭐' * problem['example_rating']}) — {problem['example_date']}\n>\n"
+                        f"> {problem['example_review']}"
                     )
-                    st.dataframe(nb_df, use_container_width=True, hide_index=True)
+                    st.caption(f"— {problem['example_author']}")
 
         st.divider()
 
-        st.subheader("Positive Review Themes (4-5 ⭐)")
-        st.caption("What users love about the app.")
-        pos_df = df[df["rating"] >= 4]
-        if pos_df.empty:
-            st.info("No positive reviews found.")
-        else:
-            pos_texts = (pos_df["title"].fillna("") + " " + pos_df["review"].fillna("")).tolist()
-            pos_kw = extract_keywords(pos_texts, top_n=20)
-            pos_bg = extract_bigrams(pos_texts, top_n=15)
+        st.subheader("🟢 Top 5 Wins")
+        st.caption("What users love most about the app, based on positive reviews (4-5 stars).")
 
-            pcol1, pcol2 = st.columns(2)
-            with pcol1:
-                st.markdown("**Strengths keywords**")
-                if pos_kw:
-                    pk_df = pd.DataFrame(pos_kw, columns=["Word", "Count"])
-                    st.dataframe(pk_df, use_container_width=True, hide_index=True)
-            with pcol2:
-                st.markdown("**Strengths phrases**")
-                if pos_bg:
-                    pb_df = pd.DataFrame(
-                        [(f"{a} {b}", c) for (a, b), c in pos_bg],
-                        columns=["Phrase", "Count"],
+        wins = cluster_reviews_by_theme(df, (4, 5), top_n=5)
+        if not wins:
+            st.info("No strong positive themes found yet.")
+        else:
+            for idx, win in enumerate(wins, 1):
+                with st.expander(
+                    f"**{idx}. \"{win['theme']}\"** — mentioned {win['mentions']} times",
+                    expanded=(idx <= 2),
+                ):
+                    if win["related_words"]:
+                        st.markdown(f"**Related topics:** {', '.join(win['related_words'])}")
+
+                    st.markdown("**Example review:**")
+                    st.markdown(
+                        f"> **{win['example_title']}** "
+                        f"({'⭐' * win['example_rating']}) — {win['example_date']}\n>\n"
+                        f"> {win['example_review']}"
                     )
-                    st.dataframe(pb_df, use_container_width=True, hide_index=True)
+                    st.caption(f"— {win['example_author']}")
 
         st.divider()
 
