@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 import re
+import json
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
@@ -11,6 +12,8 @@ st.set_page_config(page_title="App Store Reviews Exporter", page_icon="📱", la
 for key, default in [
     ("reviews_df", None),
     ("fetch_done", False),
+    ("trustpilot_df", None),
+    ("trustpilot_info", None),
     ("comp_apps", []),
     ("comp_data", {}),
     ("comp_fetched", False),
@@ -58,6 +61,104 @@ def parse_entry(entry):
         }
     except Exception:
         return None
+
+
+def fetch_trustpilot_reviews(domain, max_pages, cutoff_date, progress_bar=None, status_text=None):
+    all_reviews = []
+    business_info = None
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+
+    for page in range(1, max_pages + 1):
+        if progress_bar:
+            progress_bar.progress(page / max_pages, text=f"Trustpilot page {page}/{max_pages}...")
+        if status_text:
+            status_text.text(f"Fetching Trustpilot page {page}...")
+
+        url = f"https://www.trustpilot.com/review/{domain}?languages=all&sort=recency&page={page}"
+        try:
+            response = requests.get(url, headers=headers, timeout=15)
+            if response.status_code != 200:
+                if status_text:
+                    status_text.warning(f"Trustpilot page {page}: HTTP {response.status_code}")
+                break
+
+            html = response.text
+            match = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL)
+            if not match:
+                if status_text:
+                    status_text.warning(f"Trustpilot page {page}: Could not parse page data")
+                break
+
+            nd = json.loads(match.group(1))
+            props = nd.get("props", {}).get("pageProps", {})
+
+            if page == 1:
+                bu = props.get("businessUnit", {})
+                business_info = {
+                    "name": bu.get("displayName", domain),
+                    "trustScore": bu.get("trustScore", 0),
+                    "stars": bu.get("stars", 0),
+                    "totalReviews": bu.get("numberOfReviews", 0),
+                }
+                pagination = props.get("filters", {}).get("pagination", {})
+                total_pages = pagination.get("totalPages", 1)
+                if max_pages > total_pages:
+                    max_pages = total_pages
+
+            reviews = props.get("reviews", [])
+            if not reviews:
+                if status_text:
+                    status_text.text(f"No more reviews at page {page}. Stopping.")
+                break
+
+            all_too_old = True
+            page_count = 0
+            for r in reviews:
+                try:
+                    dates = r.get("dates", {})
+                    pub_date_str = dates.get("publishedDate", "")
+                    if pub_date_str:
+                        pub_date = datetime.fromisoformat(pub_date_str.replace("Z", "+00:00"))
+                    else:
+                        continue
+
+                    if pub_date < cutoff_date:
+                        continue
+
+                    all_too_old = False
+                    page_count += 1
+                    all_reviews.append({
+                        "date": pub_date,
+                        "rating": r.get("rating", 0),
+                        "title": r.get("title", ""),
+                        "review": r.get("text", ""),
+                        "author": r.get("consumer", {}).get("displayName", ""),
+                        "version": "N/A",
+                    })
+                except Exception:
+                    continue
+
+            if status_text:
+                status_text.text(f"Trustpilot page {page}: {page_count} reviews within date range")
+
+            if all_too_old and page > 1:
+                if status_text:
+                    status_text.text(f"All Trustpilot reviews on page {page} are too old. Stopping.")
+                break
+
+        except Exception as e:
+            if status_text:
+                status_text.warning(f"Trustpilot page {page}: Error — {e}")
+            break
+
+    if progress_bar:
+        progress_bar.progress(1.0, text="Trustpilot done!")
+
+    return all_reviews, business_info
 
 
 def fetch_reviews_simple(app_id, country, max_pages, cutoff_date):
@@ -327,6 +428,8 @@ def cluster_reviews_by_theme(reviews_df, rating_range, top_n=5):
             if kw in review_text and kw not in phrase_words and len(related_words) < 3:
                 related_words.append(kw)
 
+        all_matching_indices = list(matching.index)
+
         themes.append({
             "theme": phrase,
             "mentions": phrase_count,
@@ -336,14 +439,116 @@ def cluster_reviews_by_theme(reviews_df, rating_range, top_n=5):
             "example_date": best["date"].strftime("%Y-%m-%d") if best["date"] else "",
             "example_author": best["author"],
             "related_words": related_words,
+            "all_matching_indices": all_matching_indices,
         })
 
     return themes
 
 
+def render_themes_with_all_reviews(themes, source_df, section_key, is_problem=True):
+    emoji = "🔴" if is_problem else "🟢"
+    label = "Problems" if is_problem else "Wins"
+
+    if not themes:
+        if is_problem:
+            st.success("No significant problems found in the reviews!")
+        else:
+            st.info("No strong positive themes found yet.")
+        return
+
+    for idx, theme in enumerate(themes, 1):
+        with st.expander(
+            f"**{idx}. \"{theme['theme']}\"** — mentioned {theme['mentions']} times",
+            expanded=(idx <= 2),
+        ):
+            if theme["related_words"]:
+                st.markdown(f"**Related topics:** {', '.join(theme['related_words'])}")
+
+            st.markdown("**Example review:**")
+            st.markdown(
+                f"> **{theme['example_title']}** "
+                f"({'⭐' * theme['example_rating']}) — {theme['example_date']}\n>\n"
+                f"> {theme['example_review']}"
+            )
+            st.caption(f"— {theme['example_author']}")
+
+            matching_indices = theme.get("all_matching_indices", [])
+            if len(matching_indices) > 1:
+                show_key = f"show_all_{section_key}_{label}_{idx}"
+                if st.button(f"View all {len(matching_indices)} matching reviews", key=show_key):
+                    st.session_state[f"expanded_{show_key}"] = not st.session_state.get(f"expanded_{show_key}", False)
+
+                if st.session_state.get(f"expanded_{show_key}", False):
+                    all_matching = source_df.loc[
+                        source_df.index.isin(matching_indices)
+                    ].sort_values("date", ascending=False)
+                    display_df = all_matching[["date", "rating", "title", "review", "author"]].copy()
+                    display_df["date"] = display_df["date"].dt.strftime("%Y-%m-%d")
+                    st.dataframe(display_df, use_container_width=True, height=300, hide_index=True)
+
+
+def render_insights_section(data_df, section_key):
+    total = len(data_df)
+    avg_rating = data_df["rating"].mean()
+    negative_pct = len(data_df[data_df["rating"] <= 2]) / total * 100
+    positive_pct = len(data_df[data_df["rating"] >= 4]) / total * 100
+
+    all_texts = (data_df["title"].fillna("") + " " + data_df["review"].fillna("")).tolist()
+    sentiment = compute_sentiment(all_texts)
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Average Rating", f"{avg_rating:.1f} ⭐")
+    m2.metric("Positive (4-5⭐)", f"{positive_pct:.0f}%")
+    m3.metric("Negative (1-2⭐)", f"{negative_pct:.0f}%")
+
+    sentiment_emoji = {"Positive": "😊", "Negative": "😟", "Mixed": "😐", "Neutral": "😶"}
+    m4.metric(
+        "Sentiment",
+        f"{sentiment_emoji.get(sentiment['label'], '')} {sentiment['label']}",
+        help=f"Score: {sentiment['score']} (positive words: {sentiment['positive']}, negative words: {sentiment['negative']})",
+    )
+
+    st.divider()
+
+    st.subheader("Sentiment Breakdown")
+    st.caption("Analysis of positive and negative language used across all reviews.")
+
+    sent_col1, sent_col2, sent_col3 = st.columns(3)
+    sent_col1.metric("Positive Words Found", sentiment["positive"])
+    sent_col2.metric("Negative Words Found", sentiment["negative"])
+    score_display = f"{sentiment['score']:+.2f}"
+    sent_col3.metric("Sentiment Score", score_display, help="Range: -1.0 (very negative) to +1.0 (very positive)")
+
+    sent_chart_data = pd.DataFrame({
+        "Type": ["Positive", "Negative"],
+        "Count": [sentiment["positive"], sentiment["negative"]],
+    })
+    st.bar_chart(sent_chart_data, x="Type", y="Count")
+
+    st.divider()
+
+    st.subheader(f"{emoji_for('problem')} Top 5 Problems")
+    st.caption("The most common complaints and pain points users mention in negative reviews (1-2 stars).")
+    problems = cluster_reviews_by_theme(data_df, (1, 2), top_n=5)
+    render_themes_with_all_reviews(problems, data_df, section_key, is_problem=True)
+
+    st.divider()
+
+    st.subheader(f"{emoji_for('win')} Top 5 Wins")
+    st.caption("What users love most, based on positive reviews (4-5 stars).")
+    wins = cluster_reviews_by_theme(data_df, (4, 5), top_n=5)
+    render_themes_with_all_reviews(wins, data_df, section_key, is_problem=False)
+
+
+def emoji_for(t):
+    return "🔴" if t == "problem" else "🟢"
+
+
 with st.sidebar:
     st.header("Configuration")
     app_id = st.text_input("App Store App ID", value="", placeholder="e.g. 284882215")
+    trustpilot_domain = st.text_input("Trustpilot Domain", value="", placeholder="e.g. bancobpm.it",
+                                       help="The company domain as it appears on Trustpilot (trustpilot.com/review/DOMAIN)")
     country_code = st.text_input("Country Code", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
 
     st.subheader("Fetch Limits")
@@ -361,17 +566,25 @@ with st.sidebar:
     output_filename = st.text_input("Output Filename", value="app_reviews.xlsx")
     if not output_filename.endswith(".xlsx"):
         output_filename += ".xlsx"
-    fetch_button = st.button("Fetch Reviews", type="primary", disabled=not app_id.strip())
 
-tabs = st.tabs(["📋 Reviews", "💡 Insights", "⚔️ Comparison"])
+    can_fetch = app_id.strip() or trustpilot_domain.strip()
+    fetch_button = st.button("Fetch Reviews", type="primary", disabled=not can_fetch)
+
+tab_labels = ["📋 Reviews", "💡 Insights"]
+if trustpilot_domain.strip() or st.session_state.trustpilot_df is not None:
+    tab_labels.append("🏦 Trustpilot")
+tab_labels.append("⚔️ Comparison")
+tabs = st.tabs(tab_labels)
+
+tp_tab_idx = tab_labels.index("🏦 Trustpilot") if "🏦 Trustpilot" in tab_labels else None
+comp_tab_idx = tab_labels.index("⚔️ Comparison")
 
 if fetch_button:
-    if not app_id.strip():
-        st.error("Please enter a valid App Store App ID.")
-    else:
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_days)
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_days)
+
+    if app_id.strip():
         with tabs[0]:
-            progress_bar = st.progress(0, text="Starting...")
+            progress_bar = st.progress(0, text="Starting App Store fetch...")
             status_text = st.empty()
 
             reviews = fetch_reviews(
@@ -380,24 +593,51 @@ if fetch_button:
             )
 
             if not reviews:
-                st.warning("No reviews found for this app/country/time combination.")
+                st.warning("No App Store reviews found for this app/country/time combination.")
                 st.session_state.reviews_df = None
-                st.session_state.fetch_done = True
             else:
-                df = pd.DataFrame(reviews)
-                df = df.sort_values("date", ascending=False).reset_index(drop=True)
-                st.session_state.reviews_df = df
-                st.session_state.fetch_done = True
+                app_df = pd.DataFrame(reviews)
+                app_df = app_df.sort_values("date", ascending=False).reset_index(drop=True)
+                st.session_state.reviews_df = app_df
                 progress_bar.empty()
                 status_text.empty()
-                st.rerun()
+    else:
+        st.session_state.reviews_df = None
+
+    if trustpilot_domain.strip() and tp_tab_idx is not None:
+        with tabs[tp_tab_idx]:
+            tp_progress = st.progress(0, text="Starting Trustpilot fetch...")
+            tp_status = st.empty()
+
+            tp_reviews, tp_info = fetch_trustpilot_reviews(
+                trustpilot_domain.strip(), max_pages, cutoff_date,
+                tp_progress, tp_status,
+            )
+
+            st.session_state.trustpilot_info = tp_info
+            if not tp_reviews:
+                st.warning("No Trustpilot reviews found for this domain/time combination.")
+                st.session_state.trustpilot_df = None
+            else:
+                tp_df = pd.DataFrame(tp_reviews)
+                tp_df = tp_df.sort_values("date", ascending=False).reset_index(drop=True)
+                st.session_state.trustpilot_df = tp_df
+                tp_progress.empty()
+                tp_status.empty()
+    else:
+        if not trustpilot_domain.strip():
+            st.session_state.trustpilot_df = None
+            st.session_state.trustpilot_info = None
+
+    st.session_state.fetch_done = True
+    st.rerun()
 
 df = st.session_state.reviews_df
 
 with tabs[0]:
     if df is None or df.empty:
         if st.session_state.fetch_done:
-            st.info("No reviews were found. Try adjusting your settings in the sidebar.")
+            st.info("No App Store reviews were found. Try adjusting your settings in the sidebar.")
         else:
             st.info("Configure your App ID and settings in the sidebar, then click **Fetch Reviews** to get started.")
     else:
@@ -482,92 +722,7 @@ with tabs[1]:
         else:
             st.info("Fetch reviews first using the sidebar to see insights here.")
     else:
-        total = len(df)
-        avg_rating = df["rating"].mean()
-        negative_pct = len(df[df["rating"] <= 2]) / total * 100
-        positive_pct = len(df[df["rating"] >= 4]) / total * 100
-
-        all_texts = (df["title"].fillna("") + " " + df["review"].fillna("")).tolist()
-        sentiment = compute_sentiment(all_texts)
-
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Average Rating", f"{avg_rating:.1f} ⭐")
-        m2.metric("Positive (4-5⭐)", f"{positive_pct:.0f}%")
-        m3.metric("Negative (1-2⭐)", f"{negative_pct:.0f}%")
-
-        sentiment_emoji = {"Positive": "😊", "Negative": "😟", "Mixed": "😐", "Neutral": "😶"}
-        m4.metric(
-            "Sentiment",
-            f"{sentiment_emoji.get(sentiment['label'], '')} {sentiment['label']}",
-            help=f"Score: {sentiment['score']} (positive words: {sentiment['positive']}, negative words: {sentiment['negative']})",
-        )
-
-        st.divider()
-
-        st.subheader("Sentiment Breakdown")
-        st.caption("Analysis of positive and negative language used across all reviews.")
-
-        sent_col1, sent_col2, sent_col3 = st.columns(3)
-        sent_col1.metric("Positive Words Found", sentiment["positive"])
-        sent_col2.metric("Negative Words Found", sentiment["negative"])
-        score_display = f"{sentiment['score']:+.2f}"
-        sent_col3.metric("Sentiment Score", score_display, help="Range: -1.0 (very negative) to +1.0 (very positive)")
-
-        sent_chart_data = pd.DataFrame({
-            "Type": ["Positive", "Negative"],
-            "Count": [sentiment["positive"], sentiment["negative"]],
-        })
-        st.bar_chart(sent_chart_data, x="Type", y="Count")
-
-        st.divider()
-
-        st.subheader("🔴 Top 5 Problems")
-        st.caption("The most common complaints and pain points users mention in negative reviews (1-2 stars).")
-
-        problems = cluster_reviews_by_theme(df, (1, 2), top_n=5)
-        if not problems:
-            st.success("No significant problems found in the reviews!")
-        else:
-            for idx, problem in enumerate(problems, 1):
-                with st.expander(
-                    f"**{idx}. \"{problem['theme']}\"** — mentioned {problem['mentions']} times",
-                    expanded=(idx <= 2),
-                ):
-                    if problem["related_words"]:
-                        st.markdown(f"**Related topics:** {', '.join(problem['related_words'])}")
-
-                    st.markdown("**Example review:**")
-                    st.markdown(
-                        f"> **{problem['example_title']}** "
-                        f"({'⭐' * problem['example_rating']}) — {problem['example_date']}\n>\n"
-                        f"> {problem['example_review']}"
-                    )
-                    st.caption(f"— {problem['example_author']}")
-
-        st.divider()
-
-        st.subheader("🟢 Top 5 Wins")
-        st.caption("What users love most about the app, based on positive reviews (4-5 stars).")
-
-        wins = cluster_reviews_by_theme(df, (4, 5), top_n=5)
-        if not wins:
-            st.info("No strong positive themes found yet.")
-        else:
-            for idx, win in enumerate(wins, 1):
-                with st.expander(
-                    f"**{idx}. \"{win['theme']}\"** — mentioned {win['mentions']} times",
-                    expanded=(idx <= 2),
-                ):
-                    if win["related_words"]:
-                        st.markdown(f"**Related topics:** {', '.join(win['related_words'])}")
-
-                    st.markdown("**Example review:**")
-                    st.markdown(
-                        f"> **{win['example_title']}** "
-                        f"({'⭐' * win['example_rating']}) — {win['example_date']}\n>\n"
-                        f"> {win['example_review']}"
-                    )
-                    st.caption(f"— {win['example_author']}")
+        render_insights_section(df, "appstore_insights")
 
         st.divider()
 
@@ -613,7 +768,58 @@ with tabs[1]:
                 display_stats["Avg Rating"] = display_stats["Avg Rating"].round(2)
                 st.dataframe(display_stats, use_container_width=True, hide_index=True)
 
-with tabs[2]:
+if tp_tab_idx is not None:
+    with tabs[tp_tab_idx]:
+        tp_df = st.session_state.trustpilot_df
+        tp_info = st.session_state.trustpilot_info
+
+        if tp_df is None or tp_df.empty:
+            if st.session_state.fetch_done:
+                st.info("No Trustpilot reviews were found. Check the domain name and try again.")
+            else:
+                st.info("Enter a Trustpilot domain in the sidebar and click **Fetch Reviews** to load Trustpilot data.")
+        else:
+            if tp_info:
+                st.markdown(f"### {tp_info['name']} on Trustpilot")
+                tp_m1, tp_m2, tp_m3 = st.columns(3)
+                tp_m1.metric("TrustScore", f"{tp_info['trustScore']:.1f} / 5")
+                tp_m2.metric("Stars", f"{'⭐' * round(tp_info['stars'])}")
+                tp_m3.metric("Total Reviews (all time)", tp_info['totalReviews'])
+
+            st.caption(f"Showing **{len(tp_df)}** reviews within the selected time period")
+
+            st.divider()
+
+            render_insights_section(tp_df, "trustpilot_insights")
+
+            st.divider()
+
+            st.subheader("All Trustpilot Reviews")
+            tp_filter_cols = st.columns([2, 2])
+            with tp_filter_cols[0]:
+                tp_rating_filter = st.multiselect("Filter by rating", [1, 2, 3, 4, 5], default=[1, 2, 3, 4, 5], key="tp_rating_filter")
+            with tp_filter_cols[1]:
+                tp_sort_order = st.selectbox("Sort by date", ["Newest first", "Oldest first"], key="tp_sort")
+
+            tp_filtered = tp_df[tp_df["rating"].isin(tp_rating_filter)].copy()
+            tp_filtered = tp_filtered.sort_values("date", ascending=(tp_sort_order == "Oldest first")).reset_index(drop=True)
+
+            tp_preview = tp_filtered[["date", "rating", "title", "review", "author"]].copy()
+            tp_preview["date"] = tp_preview["date"].dt.strftime("%Y-%m-%d")
+            st.dataframe(tp_preview, use_container_width=True, height=400)
+
+            st.divider()
+            tp_excel = create_excel(tp_filtered)
+            st.download_button(
+                label="Download Trustpilot reviews (Excel)",
+                data=tp_excel,
+                file_name="trustpilot_reviews.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                type="primary",
+                key="tp_download",
+            )
+
+with tabs[comp_tab_idx]:
     st.markdown("### Compare Multiple Apps")
     st.caption(
         "Enter App Store IDs of apps you want to compare. "
