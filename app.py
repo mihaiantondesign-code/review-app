@@ -20,10 +20,7 @@ for key, default in [
 
 
 def build_url(country, app_id, page=1):
-    base = f"https://itunes.apple.com/{country}/rss/customerreviews/id={app_id}/sortBy=mostRecent/json"
-    if page > 1:
-        base += f"/page={page}"
-    return base
+    return f"https://itunes.apple.com/{country}/rss/customerreviews/page={page}/id={app_id}/sortBy=mostRecent/json"
 
 
 def lookup_app_name(app_id, country="us"):
@@ -79,12 +76,8 @@ def fetch_reviews_simple(app_id, country, max_pages, cutoff_date):
         if not entries:
             break
 
-        review_entries = entries[1:] if page == 1 else entries
-        if not review_entries:
-            break
-
         all_too_old = True
-        for entry in review_entries:
+        for entry in entries:
             parsed = parse_entry(entry)
             if parsed and parsed["date"] and parsed["rating"]:
                 if parsed["date"] >= cutoff_date:
@@ -123,15 +116,9 @@ def fetch_reviews(app_id, country, max_pages, cutoff_date, progress_bar, status_
             status_text.text(f"No more entries at page {page}. Stopping.")
             break
 
-        review_entries = entries[1:] if page == 1 else entries
-
-        if not review_entries:
-            status_text.text(f"No review entries on page {page}. Stopping.")
-            break
-
         page_count = 0
         all_too_old = True
-        for entry in review_entries:
+        for entry in entries:
             parsed = parse_entry(entry)
             if parsed and parsed["date"] and parsed["rating"]:
                 if parsed["date"] >= cutoff_date:
