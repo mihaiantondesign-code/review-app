@@ -383,6 +383,209 @@ NEGATIVE_WORDS = {
 }
 
 
+NON_APP_CATEGORIES = {
+    "pricing": {
+        "price", "pricing", "cost", "expensive", "cheap", "fee", "fees",
+        "subscription", "subscriptions", "subscribe", "payment", "pay",
+        "charge", "charged", "charges", "billing", "bill", "bills",
+        "refund", "refunds", "money", "euro", "euros", "dollar", "dollars",
+        "purchase", "purchases", "bought", "buy", "buying", "afford",
+        "overpriced", "overcharge", "premium", "trial", "free", "freemium",
+        "in-app", "iap", "microtransaction", "microtransactions",
+        "prezzo", "prezzi", "costo", "costi", "costoso", "costosa",
+        "abbonamento", "abbonamenti", "abbonare", "pagamento", "pagamenti",
+        "pagare", "addebito", "addebitato", "addebitati", "addebiti",
+        "rimborso", "rimborsi", "soldi", "spesa", "spese", "gratis",
+        "gratuito", "gratuita", "acquisto", "acquisti", "comprare",
+        "canone", "tariffe", "tariffa", "commissione", "commissioni",
+    },
+    "support": {
+        "support", "customer service", "helpdesk", "help desk", "ticket",
+        "tickets", "agent", "agents", "operator", "operators", "call center",
+        "callcenter", "hotline", "representative", "representatives",
+        "response time", "waiting", "waited", "wait", "hold", "queue",
+        "unresponsive", "rude", "unhelpful", "ignored", "assistenza",
+        "operatore", "operatori", "servizio clienti", "centralino",
+        "risposta", "attesa", "aspettare", "aspettato", "ignorato",
+        "ignorata", "maleducato", "maleducata", "chiamata", "chiamate",
+        "contattare", "contatto", "reclamo", "reclami", "segnalazione",
+    },
+    "policy": {
+        "policy", "policies", "terms", "conditions", "agreement",
+        "regulation", "regulations", "compliance", "legal", "contract",
+        "contracts", "clause", "clauses", "privacy", "gdpr", "data protection",
+        "unfair", "deceptive", "misleading", "scam", "fraud", "fraudulent",
+        "politica", "politiche", "condizioni", "contratto", "contratti",
+        "clausola", "clausole", "regolamento", "normativa", "normative",
+        "inganno", "ingannevole", "truffa", "truffatori", "frode",
+        "scorretto", "scorrettezza", "illecito", "trasparenza",
+    },
+    "external": {
+        "branch", "branches", "office", "offices", "location", "locations",
+        "employee", "employees", "staff", "personnel", "manager", "managers",
+        "atm", "atms", "cashier", "teller", "counter", "physical",
+        "in person", "in-person", "visit", "visited", "filiale", "filiali",
+        "sede", "sedi", "ufficio", "uffici", "sportello", "sportelli",
+        "dipendente", "dipendenti", "personale", "direttore", "direttori",
+        "bancomat", "cassa", "cassiere", "consulente", "consulenti",
+        "promotore", "promotori", "promotrice", "appuntamento",
+    },
+}
+
+APP_RELATED_KEYWORDS = {
+    "app", "application", "update", "updates", "updated", "version",
+    "install", "installed", "download", "downloaded", "interface", "ui",
+    "ux", "design", "screen", "screens", "button", "buttons", "menu",
+    "navigation", "navigate", "loading", "load", "loads", "login",
+    "log in", "logout", "sign in", "signin", "signup", "sign up",
+    "crash", "crashes", "crashed", "crashing", "bug", "bugs", "buggy",
+    "glitch", "glitches", "freeze", "freezes", "frozen", "slow",
+    "fast", "speed", "performance", "lag", "laggy", "responsive",
+    "notification", "notifications", "push", "alert", "alerts",
+    "feature", "features", "function", "functions", "functionality",
+    "fingerprint", "face id", "faceid", "biometric", "touch id",
+    "widget", "widgets", "dark mode", "layout", "tab", "tabs",
+    "scroll", "scrolling", "swipe", "tap", "click", "search",
+    "filter", "sort", "display", "displaying", "shows", "showing",
+    "applicazione", "aggiornamento", "aggiornamenti", "aggiornata",
+    "versione", "installare", "installata", "scaricare", "scaricata",
+    "interfaccia", "schermata", "schermate", "pulsante", "pulsanti",
+    "navigazione", "caricamento", "accesso", "accedere", "registrazione",
+    "blocca", "bloccata", "bloccato", "errore", "errori",
+    "lento", "lenta", "veloce", "prestazioni", "notifica", "notifiche",
+    "funzione", "funzioni", "funzionalità", "impronta", "riconoscimento",
+}
+
+
+def classify_review(title, review_text):
+    text = f"{title} {review_text}".lower()
+    words = set(re.findall(r"[a-zA-ZàèéìòùÀÈÉÌÒÙ'-]{3,}", text))
+
+    non_app_scores = {}
+    total_non_app = 0
+    for category, kw_set in NON_APP_CATEGORIES.items():
+        hits = words & kw_set
+        for phrase in kw_set:
+            if " " in phrase and phrase in text:
+                hits.add(phrase)
+        score = len(hits)
+        non_app_scores[category] = score
+        total_non_app += score
+
+    app_hits = words & APP_RELATED_KEYWORDS
+    for phrase in APP_RELATED_KEYWORDS:
+        if " " in phrase and phrase in text:
+            app_hits.add(phrase)
+    app_score = len(app_hits)
+
+    if total_non_app == 0 and app_score == 0:
+        return "app_related", None
+    if total_non_app == 0:
+        return "app_related", None
+
+    if app_score == 0 and total_non_app > 0:
+        dominant = max(non_app_scores, key=non_app_scores.get)
+        return "non_app", dominant
+
+    if total_non_app > app_score * 1.5:
+        dominant = max(non_app_scores, key=non_app_scores.get)
+        return "non_app", dominant
+
+    return "app_related", None
+
+
+def add_classification_columns(df):
+    classifications = df.apply(
+        lambda r: classify_review(str(r.get("title", "")), str(r.get("review", ""))),
+        axis=1,
+    )
+    df["is_app_related"] = classifications.apply(lambda x: x[0] == "app_related")
+    df["exclusion_category"] = classifications.apply(lambda x: x[1])
+    return df
+
+
+def compute_adjusted_metrics(df):
+    if df.empty:
+        return {}
+
+    if "is_app_related" not in df.columns:
+        df = add_classification_columns(df)
+
+    total = len(df)
+    original_avg = df["rating"].mean()
+
+    app_df = df[df["is_app_related"]].copy()
+    excluded_df = df[~df["is_app_related"]].copy()
+
+    app_count = len(app_df)
+    excluded_count = len(excluded_df)
+    adjusted_avg = app_df["rating"].mean() if not app_df.empty else 0
+
+    category_breakdown = {}
+    if not excluded_df.empty:
+        for cat in NON_APP_CATEGORIES:
+            cat_count = len(excluded_df[excluded_df["exclusion_category"] == cat])
+            if cat_count > 0:
+                category_breakdown[cat] = cat_count
+
+    return {
+        "original_count": total,
+        "original_avg": round(original_avg, 2),
+        "adjusted_count": app_count,
+        "adjusted_avg": round(adjusted_avg, 2),
+        "excluded_count": excluded_count,
+        "excluded_pct": round(excluded_count / total * 100, 1) if total > 0 else 0,
+        "rating_delta": round(adjusted_avg - original_avg, 2) if app_count > 0 else 0,
+        "category_breakdown": category_breakdown,
+    }
+
+
+CATEGORY_LABELS = {
+    "pricing": "💰 Pricing & Billing",
+    "support": "📞 Customer Support",
+    "policy": "📋 Policy & Terms",
+    "external": "🏢 Branches & Staff",
+}
+
+
+def render_adjusted_rating_card(metrics):
+    if not metrics:
+        return
+
+    st.subheader("🎯 Adjusted Rating (App Experience Only)")
+    st.caption(
+        "Reviews about pricing, customer support, company policies, or physical locations "
+        "are excluded to isolate feedback specifically about the app experience."
+    )
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric(
+        "Original Rating",
+        f"{metrics['original_avg']:.2f} ⭐",
+        help=f"Based on all {metrics['original_count']} reviews",
+    )
+    delta_color = "normal" if metrics["rating_delta"] >= 0 else "inverse"
+    c2.metric(
+        "Adjusted Rating",
+        f"{metrics['adjusted_avg']:.2f} ⭐",
+        delta=f"{metrics['rating_delta']:+.2f}",
+        delta_color=delta_color,
+        help=f"Based on {metrics['adjusted_count']} app-related reviews",
+    )
+    c3.metric(
+        "Excluded Reviews",
+        f"{metrics['excluded_count']} ({metrics['excluded_pct']:.0f}%)",
+        help="Reviews classified as not about the app experience itself",
+    )
+
+    if metrics["category_breakdown"]:
+        st.markdown("**Excluded reviews by category:**")
+        cat_cols = st.columns(len(metrics["category_breakdown"]))
+        for i, (cat, count) in enumerate(sorted(metrics["category_breakdown"].items(), key=lambda x: -x[1])):
+            label = CATEGORY_LABELS.get(cat, cat.title())
+            cat_cols[i].metric(label, count)
+
+
 def compute_sentiment(texts):
     pos_count = 0
     neg_count = 0
@@ -553,6 +756,23 @@ def render_insights_section(data_df, section_key):
         f"{sentiment_emoji.get(sentiment['label'], '')} {sentiment['label']}",
         help=f"Score: {sentiment['score']} (positive words: {sentiment['positive']}, negative words: {sentiment['negative']})",
     )
+
+    st.divider()
+
+    classified_df = add_classification_columns(data_df.copy())
+    adj_metrics = compute_adjusted_metrics(classified_df)
+    render_adjusted_rating_card(adj_metrics)
+
+    if adj_metrics.get("excluded_count", 0) > 0:
+        with st.expander(f"View {adj_metrics['excluded_count']} excluded (non-app) reviews"):
+            excluded = classified_df[~classified_df["is_app_related"]].sort_values("date", ascending=False)
+            exc_display = excluded[["date", "rating", "title", "review", "author", "exclusion_category"]].copy()
+            exc_display["date"] = exc_display["date"].dt.strftime("%Y-%m-%d")
+            exc_display.columns = ["Date", "Rating", "Title", "Review", "Author", "Category"]
+            exc_display["Category"] = exc_display["Category"].map(
+                lambda c: CATEGORY_LABELS.get(c, c.title() if c else "")
+            )
+            st.dataframe(exc_display, use_container_width=True, height=300, hide_index=True)
 
     st.divider()
 
@@ -1019,6 +1239,7 @@ with tabs[3]:
             total = len(cdf)
             texts = (cdf["title"].fillna("") + " " + cdf["review"].fillna("")).tolist() if total > 0 else []
             sent = compute_sentiment(texts)
+            adj = compute_adjusted_metrics(cdf) if total > 0 else {}
             if total > 0:
                 avg = cdf["rating"].mean()
                 pos = len(cdf[cdf["rating"] >= 4]) / total * 100
@@ -1037,6 +1258,9 @@ with tabs[3]:
                 "ID": aid,
                 "Reviews": total,
                 "Avg Rating": round(avg, 1),
+                "Adj. Rating": adj.get("adjusted_avg", "—"),
+                "Δ Rating": f"{adj.get('rating_delta', 0):+.2f}" if adj else "—",
+                "Excluded": f"{adj.get('excluded_count', 0)} ({adj.get('excluded_pct', 0):.0f}%)" if adj else "—",
                 "Sentiment": f"{sent['label']} ({sent['score']:+.2f})",
                 "Positive %": f"{pos:.0f}%",
                 "Negative %": f"{neg:.0f}%",
