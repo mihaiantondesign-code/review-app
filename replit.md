@@ -4,6 +4,8 @@
 A Streamlit web application that fetches Apple App Store user reviews via the public RSS JSON feed and Trustpilot reviews via web scraping, exports them to Excel (.xlsx) files. Reviews can be filtered by time period and page count (hybrid mode), and the app includes Insights, Trustpilot, and Comparison tabs with sentiment analysis.
 
 ## Recent Changes
+- 2026-02-11: Added Adjusted Rating feature — classifies reviews as app-related vs non-app (pricing, support, policy, external) using keyword matching in IT+EN. Shows original vs adjusted rating with delta, excluded count/%, category breakdown, and expandable excluded reviews table. Applied in Insights, Trustpilot, and Comparison tabs.
+- 2026-02-11: Trustpilot fetch improved: domain input auto-cleans URLs, fallback from it.trustpilot.com to www.trustpilot.com on 404, switched to urllib for HTTP.
 - 2026-02-11: Added Trustpilot integration via web scraping (__NEXT_DATA__ extraction), dedicated Trustpilot tab with full insights (sentiment, problems/wins, rating distribution), "view all matching reviews" expander for each theme in both Insights and Trustpilot tabs.
 - 2026-02-11: Hybrid fetch mode (both time period + max pages applied simultaneously), sentiment analysis per app (Insights + Comparison), version insights graphs (avg rating + review count by version).
 - 2026-02-11: Added Comparison tab for multi-app analysis with add/remove app inputs, score overview table, rating distribution comparison chart, head-to-head problems/wins, and Excel download of all comparison data.
@@ -27,13 +29,22 @@ A Streamlit web application that fetches Apple App Store user reviews via the pu
 - Trustpilot tab: business info (TrustScore, stars, total reviews), full insights mirroring App Store tab, review table with filtering, Excel export
 - Comparison tab: multi-app input (add/remove), score overview with sentiment + per-star breakdowns, sentiment comparison chart, rating distribution comparison, head-to-head problems & wins, combined Excel export
 
+## Adjusted Rating
+- classify_review() categorizes each review as app_related or non_app with a subcategory (pricing, support, policy, external)
+- Uses curated keyword sets in both Italian and English for each category
+- Mixed reviews: non-app must have 1.5x more keyword hits than app-related to be excluded
+- compute_adjusted_metrics() returns original vs adjusted rating, delta, excluded count/%, category breakdown
+- render_adjusted_rating_card() displays metrics with expandable excluded reviews table
+- Applied in render_insights_section (Insights + Trustpilot tabs) and Comparison tab Score Overview
+
 ## Trustpilot Integration
-- Scrapes `trustpilot.com/review/{domain}?languages=all&page={N}` with browser-like headers
+- Scrapes `it.trustpilot.com/review/{domain}?page={N}` with urllib, falls back to www.trustpilot.com on 404
+- Domain input auto-cleans full URLs, strips query params, trailing slashes
 - Extracts JSON from `<script id="__NEXT_DATA__">` via regex + json.loads
 - 20 reviews per page, pagination auto-detected from response
 - Business info extracted: displayName, trustScore, stars, numberOfReviews
 - Session state keys: trustpilot_df, trustpilot_info
-- Trustpilot tab only appears when domain is entered or data exists
+- Trustpilot tab always visible with independent controls
 
 ## Sentiment Analysis
 - Keyword-based approach using curated positive/negative word lists in both Italian and English
