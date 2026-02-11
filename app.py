@@ -14,6 +14,7 @@ for key, default in [
     ("fetch_done", False),
     ("trustpilot_df", None),
     ("trustpilot_info", None),
+    ("tp_fetch_done", False),
     ("comp_apps", []),
     ("comp_data", {}),
     ("comp_fetched", False),
@@ -78,7 +79,7 @@ def fetch_trustpilot_reviews(domain, max_pages, cutoff_date, progress_bar=None, 
         if status_text:
             status_text.text(f"Fetching Trustpilot page {page}...")
 
-        url = f"https://www.trustpilot.com/review/{domain}?languages=all&sort=recency&page={page}"
+        url = f"https://it.trustpilot.com/review/{domain}?page={page}"
         try:
             response = requests.get(url, headers=headers, timeout=15)
             if response.status_code != 200:
@@ -446,9 +447,6 @@ def cluster_reviews_by_theme(reviews_df, rating_range, top_n=5):
 
 
 def render_themes_with_all_reviews(themes, source_df, section_key, is_problem=True):
-    emoji = "🔴" if is_problem else "🟢"
-    label = "Problems" if is_problem else "Wins"
-
     if not themes:
         if is_problem:
             st.success("No significant problems found in the reviews!")
@@ -474,11 +472,7 @@ def render_themes_with_all_reviews(themes, source_df, section_key, is_problem=Tr
 
             matching_indices = theme.get("all_matching_indices", [])
             if len(matching_indices) > 1:
-                show_key = f"show_all_{section_key}_{label}_{idx}"
-                if st.button(f"View all {len(matching_indices)} matching reviews", key=show_key):
-                    st.session_state[f"expanded_{show_key}"] = not st.session_state.get(f"expanded_{show_key}", False)
-
-                if st.session_state.get(f"expanded_{show_key}", False):
+                with st.expander(f"View all {len(matching_indices)} matching reviews"):
                     all_matching = source_df.loc[
                         source_df.index.isin(matching_indices)
                     ].sort_values("date", ascending=False)
@@ -527,28 +521,23 @@ def render_insights_section(data_df, section_key):
 
     st.divider()
 
-    st.subheader(f"{emoji_for('problem')} Top 5 Problems")
+    st.subheader("🔴 Top 5 Problems")
     st.caption("The most common complaints and pain points users mention in negative reviews (1-2 stars).")
     problems = cluster_reviews_by_theme(data_df, (1, 2), top_n=5)
     render_themes_with_all_reviews(problems, data_df, section_key, is_problem=True)
 
     st.divider()
 
-    st.subheader(f"{emoji_for('win')} Top 5 Wins")
+    st.subheader("🟢 Top 5 Wins")
     st.caption("What users love most, based on positive reviews (4-5 stars).")
     wins = cluster_reviews_by_theme(data_df, (4, 5), top_n=5)
     render_themes_with_all_reviews(wins, data_df, section_key, is_problem=False)
 
 
-def emoji_for(t):
-    return "🔴" if t == "problem" else "🟢"
-
-
+# ─── SIDEBAR: App Store only ───
 with st.sidebar:
-    st.header("Configuration")
+    st.header("App Store Configuration")
     app_id = st.text_input("App Store App ID", value="", placeholder="e.g. 284882215")
-    trustpilot_domain = st.text_input("Trustpilot Domain", value="", placeholder="e.g. bancobpm.it",
-                                       help="The company domain as it appears on Trustpilot (trustpilot.com/review/DOMAIN)")
     country_code = st.text_input("Country Code", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
 
     st.subheader("Fetch Limits")
@@ -566,23 +555,17 @@ with st.sidebar:
     output_filename = st.text_input("Output Filename", value="app_reviews.xlsx")
     if not output_filename.endswith(".xlsx"):
         output_filename += ".xlsx"
+    fetch_button = st.button("Fetch App Store Reviews", type="primary", disabled=not app_id.strip())
 
-    can_fetch = app_id.strip() or trustpilot_domain.strip()
-    fetch_button = st.button("Fetch Reviews", type="primary", disabled=not can_fetch)
+# ─── TABS ───
+tabs = st.tabs(["📋 Reviews", "💡 Insights", "🏦 Trustpilot", "⚔️ Comparison"])
 
-tab_labels = ["📋 Reviews", "💡 Insights"]
-if trustpilot_domain.strip() or st.session_state.trustpilot_df is not None:
-    tab_labels.append("🏦 Trustpilot")
-tab_labels.append("⚔️ Comparison")
-tabs = st.tabs(tab_labels)
-
-tp_tab_idx = tab_labels.index("🏦 Trustpilot") if "🏦 Trustpilot" in tab_labels else None
-comp_tab_idx = tab_labels.index("⚔️ Comparison")
-
+# ─── APP STORE FETCH ───
 if fetch_button:
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_days)
-
-    if app_id.strip():
+    if not app_id.strip():
+        st.error("Please enter a valid App Store App ID.")
+    else:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_days)
         with tabs[0]:
             progress_bar = st.progress(0, text="Starting App Store fetch...")
             status_text = st.empty()
@@ -595,51 +578,25 @@ if fetch_button:
             if not reviews:
                 st.warning("No App Store reviews found for this app/country/time combination.")
                 st.session_state.reviews_df = None
+                st.session_state.fetch_done = True
             else:
                 app_df = pd.DataFrame(reviews)
                 app_df = app_df.sort_values("date", ascending=False).reset_index(drop=True)
                 st.session_state.reviews_df = app_df
+                st.session_state.fetch_done = True
                 progress_bar.empty()
                 status_text.empty()
-    else:
-        st.session_state.reviews_df = None
-
-    if trustpilot_domain.strip() and tp_tab_idx is not None:
-        with tabs[tp_tab_idx]:
-            tp_progress = st.progress(0, text="Starting Trustpilot fetch...")
-            tp_status = st.empty()
-
-            tp_reviews, tp_info = fetch_trustpilot_reviews(
-                trustpilot_domain.strip(), max_pages, cutoff_date,
-                tp_progress, tp_status,
-            )
-
-            st.session_state.trustpilot_info = tp_info
-            if not tp_reviews:
-                st.warning("No Trustpilot reviews found for this domain/time combination.")
-                st.session_state.trustpilot_df = None
-            else:
-                tp_df = pd.DataFrame(tp_reviews)
-                tp_df = tp_df.sort_values("date", ascending=False).reset_index(drop=True)
-                st.session_state.trustpilot_df = tp_df
-                tp_progress.empty()
-                tp_status.empty()
-    else:
-        if not trustpilot_domain.strip():
-            st.session_state.trustpilot_df = None
-            st.session_state.trustpilot_info = None
-
-    st.session_state.fetch_done = True
-    st.rerun()
+                st.rerun()
 
 df = st.session_state.reviews_df
 
+# ─── TAB 0: Reviews ───
 with tabs[0]:
     if df is None or df.empty:
         if st.session_state.fetch_done:
             st.info("No App Store reviews were found. Try adjusting your settings in the sidebar.")
         else:
-            st.info("Configure your App ID and settings in the sidebar, then click **Fetch Reviews** to get started.")
+            st.info("Configure your App ID and settings in the sidebar, then click **Fetch App Store Reviews** to get started.")
     else:
         total = len(df)
         avg = df["rating"].mean()
@@ -715,12 +672,13 @@ with tabs[0]:
             type="primary",
         )
 
+# ─── TAB 1: Insights ───
 with tabs[1]:
     if df is None or df.empty:
         if st.session_state.fetch_done:
             st.info("No reviews to analyze. Try adjusting your settings.")
         else:
-            st.info("Fetch reviews first using the sidebar to see insights here.")
+            st.info("Fetch App Store reviews first using the sidebar to see insights here.")
     else:
         render_insights_section(df, "appstore_insights")
 
@@ -768,58 +726,119 @@ with tabs[1]:
                 display_stats["Avg Rating"] = display_stats["Avg Rating"].round(2)
                 st.dataframe(display_stats, use_container_width=True, hide_index=True)
 
-if tp_tab_idx is not None:
-    with tabs[tp_tab_idx]:
-        tp_df = st.session_state.trustpilot_df
-        tp_info = st.session_state.trustpilot_info
+# ─── TAB 2: Trustpilot (fully independent) ───
+with tabs[2]:
+    st.markdown("### 🏦 Trustpilot Reviews")
+    st.caption("Fetch and analyze reviews from Trustpilot. This section is completely independent from the App Store.")
 
-        if tp_df is None or tp_df.empty:
-            if st.session_state.fetch_done:
-                st.info("No Trustpilot reviews were found. Check the domain name and try again.")
-            else:
-                st.info("Enter a Trustpilot domain in the sidebar and click **Fetch Reviews** to load Trustpilot data.")
+    tp_col1, tp_col2, tp_col3 = st.columns([3, 2, 2])
+    with tp_col1:
+        trustpilot_domain = st.text_input(
+            "Trustpilot Domain",
+            value="",
+            placeholder="e.g. bancobpm.it",
+            help="The company domain as shown on Trustpilot (it.trustpilot.com/review/DOMAIN)",
+            key="tp_domain_input",
+        )
+    with tp_col2:
+        tp_time_period = st.select_slider(
+            "Time period",
+            options=["1 month", "3 months", "6 months", "1 year"],
+            value="1 year",
+            key="tp_time_period",
+        )
+        tp_period_map = {"1 month": 30, "3 months": 90, "6 months": 180, "1 year": 365}
+        tp_time_days = tp_period_map[tp_time_period]
+    with tp_col3:
+        tp_max_pages = st.number_input(
+            "Max pages",
+            min_value=1,
+            max_value=50,
+            value=10,
+            key="tp_max_pages",
+            help="Each page contains ~20 reviews. Fetching stops at page limit or when reviews are too old.",
+        )
+
+    tp_fetch = st.button("Fetch Trustpilot Reviews", type="primary", disabled=not trustpilot_domain.strip(), key="tp_fetch_btn")
+
+    if tp_fetch and trustpilot_domain.strip():
+        tp_cutoff = datetime.now(timezone.utc) - timedelta(days=tp_time_days)
+
+        tp_progress = st.progress(0, text="Starting Trustpilot fetch...")
+        tp_status = st.empty()
+
+        tp_reviews, tp_info = fetch_trustpilot_reviews(
+            trustpilot_domain.strip(), tp_max_pages, tp_cutoff,
+            tp_progress, tp_status,
+        )
+
+        st.session_state.trustpilot_info = tp_info
+        if not tp_reviews:
+            st.warning("No Trustpilot reviews found. Check the domain name and time period.")
+            st.session_state.trustpilot_df = None
         else:
-            if tp_info:
-                st.markdown(f"### {tp_info['name']} on Trustpilot")
-                tp_m1, tp_m2, tp_m3 = st.columns(3)
-                tp_m1.metric("TrustScore", f"{tp_info['trustScore']:.1f} / 5")
-                tp_m2.metric("Stars", f"{'⭐' * round(tp_info['stars'])}")
-                tp_m3.metric("Total Reviews (all time)", tp_info['totalReviews'])
+            tp_df = pd.DataFrame(tp_reviews)
+            tp_df = tp_df.sort_values("date", ascending=False).reset_index(drop=True)
+            st.session_state.trustpilot_df = tp_df
 
-            st.caption(f"Showing **{len(tp_df)}** reviews within the selected time period")
+        st.session_state.tp_fetch_done = True
+        tp_progress.empty()
+        tp_status.empty()
+        st.rerun()
 
-            st.divider()
+    st.divider()
 
-            render_insights_section(tp_df, "trustpilot_insights")
+    tp_df = st.session_state.trustpilot_df
+    tp_info = st.session_state.trustpilot_info
 
-            st.divider()
+    if tp_df is None or (hasattr(tp_df, 'empty') and tp_df.empty):
+        if st.session_state.tp_fetch_done:
+            st.info("No Trustpilot reviews were found. Check the domain name and try again.")
+        else:
+            st.info("Enter a Trustpilot domain above and click **Fetch Trustpilot Reviews** to get started.")
+    else:
+        if tp_info:
+            st.markdown(f"### {tp_info['name']} on Trustpilot")
+            tp_m1, tp_m2, tp_m3 = st.columns(3)
+            tp_m1.metric("TrustScore", f"{tp_info['trustScore']:.1f} / 5")
+            tp_m2.metric("Stars", f"{'⭐' * round(tp_info['stars'])}")
+            tp_m3.metric("Total Reviews (all time)", tp_info['totalReviews'])
 
-            st.subheader("All Trustpilot Reviews")
-            tp_filter_cols = st.columns([2, 2])
-            with tp_filter_cols[0]:
-                tp_rating_filter = st.multiselect("Filter by rating", [1, 2, 3, 4, 5], default=[1, 2, 3, 4, 5], key="tp_rating_filter")
-            with tp_filter_cols[1]:
-                tp_sort_order = st.selectbox("Sort by date", ["Newest first", "Oldest first"], key="tp_sort")
+        st.caption(f"Showing **{len(tp_df)}** reviews within the selected time period")
 
-            tp_filtered = tp_df[tp_df["rating"].isin(tp_rating_filter)].copy()
-            tp_filtered = tp_filtered.sort_values("date", ascending=(tp_sort_order == "Oldest first")).reset_index(drop=True)
+        st.divider()
 
-            tp_preview = tp_filtered[["date", "rating", "title", "review", "author"]].copy()
-            tp_preview["date"] = tp_preview["date"].dt.strftime("%Y-%m-%d")
-            st.dataframe(tp_preview, use_container_width=True, height=400)
+        render_insights_section(tp_df, "trustpilot_insights")
 
-            st.divider()
-            tp_excel = create_excel(tp_filtered)
-            st.download_button(
-                label="Download Trustpilot reviews (Excel)",
-                data=tp_excel,
-                file_name="trustpilot_reviews.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                type="primary",
-                key="tp_download",
-            )
+        st.divider()
 
-with tabs[comp_tab_idx]:
+        st.subheader("All Trustpilot Reviews")
+        tp_filter_cols = st.columns([2, 2])
+        with tp_filter_cols[0]:
+            tp_rating_filter = st.multiselect("Filter by rating", [1, 2, 3, 4, 5], default=[1, 2, 3, 4, 5], key="tp_rating_filter")
+        with tp_filter_cols[1]:
+            tp_sort_order = st.selectbox("Sort by date", ["Newest first", "Oldest first"], key="tp_sort")
+
+        tp_filtered = tp_df[tp_df["rating"].isin(tp_rating_filter)].copy()
+        tp_filtered = tp_filtered.sort_values("date", ascending=(tp_sort_order == "Oldest first")).reset_index(drop=True)
+
+        tp_preview = tp_filtered[["date", "rating", "title", "review", "author"]].copy()
+        tp_preview["date"] = tp_preview["date"].dt.strftime("%Y-%m-%d")
+        st.dataframe(tp_preview, use_container_width=True, height=400)
+
+        st.divider()
+        tp_excel = create_excel(tp_filtered)
+        st.download_button(
+            label="Download Trustpilot reviews (Excel)",
+            data=tp_excel,
+            file_name="trustpilot_reviews.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary",
+            key="tp_download",
+        )
+
+# ─── TAB 3: Comparison ───
+with tabs[3]:
     st.markdown("### Compare Multiple Apps")
     st.caption(
         "Enter App Store IDs of apps you want to compare. "
