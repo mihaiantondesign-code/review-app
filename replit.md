@@ -1,14 +1,15 @@
 # App Store Reviews Exporter
 
 ## Overview
-A Streamlit web application that fetches Apple App Store user reviews via the public RSS JSON feed and exports them to Excel (.xlsx) files. Reviews can be filtered by time period or page count, and the app includes an Insights tab for review analysis.
+A Streamlit web application that fetches Apple App Store user reviews via the public RSS JSON feed and exports them to Excel (.xlsx) files. Reviews can be filtered by time period or page count, and the app includes Insights and Comparison tabs.
 
 ## Recent Changes
+- 2026-02-11: Added Comparison tab for multi-app analysis with add/remove app inputs, score overview table, rating distribution comparison chart, head-to-head problems/wins, and Excel download of all comparison data.
 - 2026-02-11: Added configurable fetch mode (by pages or time period: 1mo/3mo/6mo/1yr) and Insights tab with keyword extraction, rating distribution, review trends, negative/positive theme analysis, and version comparison.
 - 2026-02-11: Initial build — Streamlit app with RSS feed fetching, review parsing, filtering, preview table, and Excel export with per-rating sheets.
 
 ## Project Architecture
-- `app.py` — Main Streamlit application (single file, uses st.tabs for Reviews/Insights)
+- `app.py` — Main Streamlit application (single file, uses st.tabs for Reviews/Insights/Comparison)
 - `.streamlit/config.toml` — Streamlit server configuration (port 5000)
 - Dependencies: streamlit, requests, pandas, openpyxl
 
@@ -20,6 +21,7 @@ A Streamlit web application that fetches Apple App Store user reviews via the pu
 - Preview table with rating filter and sort options
 - Excel download with one sheet per rating (1_stelle through 5_stelle)
 - Insights tab: rating distribution chart, reviews over time, keyword/bigram extraction, negative/positive theme analysis, version comparison
+- Comparison tab: multi-app input (add/remove), score overview, rating distribution comparison, head-to-head problems & wins, combined Excel export
 
 ## User Preferences
 - Italian locale default (country code "it")
