@@ -64,22 +64,51 @@ def parse_entry(entry):
         return None
 
 
+def _clean_trustpilot_domain(raw_input):
+    d = raw_input.strip()
+    d = d.rstrip("/")
+    for prefix in [
+        "https://it.trustpilot.com/review/",
+        "https://www.trustpilot.com/review/",
+        "http://it.trustpilot.com/review/",
+        "http://www.trustpilot.com/review/",
+        "it.trustpilot.com/review/",
+        "www.trustpilot.com/review/",
+        "trustpilot.com/review/",
+        "https://", "http://", "www.",
+    ]:
+        if d.lower().startswith(prefix):
+            d = d[len(prefix):]
+            break
+    d = d.split("?")[0].split("#")[0].strip("/")
+    return d
+
+
 def _fetch_trustpilot_page(domain, page):
     import urllib.request
     import ssl
 
-    url = f"https://it.trustpilot.com/review/{domain}?page={page}"
-    req = urllib.request.Request(url, headers={
+    _headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html",
         "Accept-Language": "it-IT,it;q=0.9",
-    })
-
+    }
     ctx = ssl.create_default_context()
-    with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
-        raw = resp.read()
-        html = raw.decode("utf-8", errors="replace")
-        return resp.status, html
+
+    for host in ["it.trustpilot.com", "www.trustpilot.com"]:
+        url = f"https://{host}/review/{domain}?page={page}"
+        req = urllib.request.Request(url, headers=_headers)
+        try:
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+                raw = resp.read()
+                html = raw.decode("utf-8", errors="replace")
+                return resp.status, html
+        except urllib.request.HTTPError as e:
+            if e.code == 404 and host == "it.trustpilot.com":
+                continue
+            raise
+
+    raise Exception(f"Domain '{domain}' not found on Trustpilot (404 on both it. and www. subdomains)")
 
 
 def fetch_trustpilot_reviews(domain, max_pages, cutoff_date, progress_bar=None, status_text=None):
@@ -791,8 +820,8 @@ with tabs[2]:
         tp_status = st.empty()
         tp_debug = st.empty()
 
-        domain_clean = trustpilot_domain.strip()
-        tp_debug.info(f"Fetching from: it.trustpilot.com/review/{domain_clean} — cutoff: {tp_cutoff.strftime('%Y-%m-%d')}")
+        domain_clean = _clean_trustpilot_domain(trustpilot_domain)
+        tp_debug.info(f"Fetching from: trustpilot.com/review/{domain_clean} — cutoff: {tp_cutoff.strftime('%Y-%m-%d')}")
 
         tp_reviews, tp_info = fetch_trustpilot_reviews(
             domain_clean, tp_max_pages, tp_cutoff,
