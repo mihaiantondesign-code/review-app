@@ -64,24 +64,27 @@ def parse_entry(entry):
         return None
 
 
+def _fetch_trustpilot_page(domain, page):
+    import urllib.request
+    import ssl
+
+    url = f"https://it.trustpilot.com/review/{domain}?page={page}"
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html",
+        "Accept-Language": "it-IT,it;q=0.9",
+    })
+
+    ctx = ssl.create_default_context()
+    with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+        raw = resp.read()
+        html = raw.decode("utf-8", errors="replace")
+        return resp.status, html
+
+
 def fetch_trustpilot_reviews(domain, max_pages, cutoff_date, progress_bar=None, status_text=None):
     all_reviews = []
     business_info = None
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1",
-    }
-
-    session = requests.Session()
-    session.headers.update(headers)
 
     for page in range(1, max_pages + 1):
         if progress_bar:
@@ -89,18 +92,17 @@ def fetch_trustpilot_reviews(domain, max_pages, cutoff_date, progress_bar=None, 
         if status_text:
             status_text.text(f"Fetching Trustpilot page {page}...")
 
-        url = f"https://it.trustpilot.com/review/{domain}?page={page}"
         try:
-            response = session.get(url, timeout=20)
-            if status_text:
-                status_text.text(f"Page {page}: HTTP {response.status_code}, response size: {len(response.text)} bytes")
+            status_code, html = _fetch_trustpilot_page(domain, page)
 
-            if response.status_code != 200:
+            if status_text:
+                status_text.text(f"Page {page}: HTTP {status_code}, {len(html)} bytes received")
+
+            if status_code != 200:
                 if status_text:
-                    status_text.warning(f"Trustpilot page {page}: HTTP {response.status_code}")
+                    status_text.warning(f"Trustpilot page {page}: HTTP {status_code}")
                 break
 
-            html = response.text
             if len(html) < 1000:
                 if status_text:
                     status_text.warning(f"Trustpilot page {page}: Response too short ({len(html)} bytes) — site may be blocking requests")
@@ -109,7 +111,7 @@ def fetch_trustpilot_reviews(domain, max_pages, cutoff_date, progress_bar=None, 
             match = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL)
             if not match:
                 if status_text:
-                    status_text.warning(f"Trustpilot page {page}: Could not find review data in page (HTML size: {len(html)})")
+                    status_text.warning(f"Trustpilot page {page}: Could not find review data in page (HTML: {len(html)} bytes)")
                 break
 
             nd = json.loads(match.group(1))
@@ -127,7 +129,7 @@ def fetch_trustpilot_reviews(domain, max_pages, cutoff_date, progress_bar=None, 
                 total_pages = pagination.get("totalPages", 1)
                 total_count = pagination.get("totalCount", 0)
                 if status_text:
-                    status_text.text(f"Page 1: Found {business_info['name']} — {total_count} reviews across {total_pages} pages")
+                    status_text.text(f"Found {business_info['name']} — {total_count} reviews across {total_pages} pages")
                 if max_pages > total_pages:
                     max_pages = total_pages
 
@@ -165,16 +167,16 @@ def fetch_trustpilot_reviews(domain, max_pages, cutoff_date, progress_bar=None, 
                     continue
 
             if status_text:
-                status_text.text(f"Trustpilot page {page}: {page_count} reviews in date range (total so far: {len(all_reviews)})")
+                status_text.text(f"Page {page}: {page_count} reviews in date range (total so far: {len(all_reviews)})")
 
             if all_too_old and page > 1:
                 if status_text:
-                    status_text.text(f"All Trustpilot reviews on page {page} are too old. Stopping.")
+                    status_text.text(f"All reviews on page {page} are too old. Stopping.")
                 break
 
         except Exception as e:
             if status_text:
-                status_text.warning(f"Trustpilot page {page}: Error — {type(e).__name__}: {e}")
+                status_text.warning(f"Trustpilot page {page}: {type(e).__name__}: {e}")
             break
 
     if progress_bar:
@@ -798,23 +800,22 @@ with tabs[2]:
         )
 
         st.session_state.trustpilot_info = tp_info
+        tp_progress.empty()
+        tp_debug.empty()
+
         if not tp_reviews:
             if tp_info:
                 st.warning(f"Connected to Trustpilot ({tp_info['name']}, {tp_info['totalReviews']} total reviews) but no reviews matched the time period. Try increasing the time range.")
             else:
-                st.error("Could not connect to Trustpilot. The site may be blocking requests from this server.")
+                st.error("Could not connect to Trustpilot. Check the status message above for details.")
             st.session_state.trustpilot_df = None
+            st.session_state.tp_fetch_done = True
         else:
             tp_df = pd.DataFrame(tp_reviews)
             tp_df = tp_df.sort_values("date", ascending=False).reset_index(drop=True)
             st.session_state.trustpilot_df = tp_df
-            st.success(f"Fetched {len(tp_reviews)} Trustpilot reviews!")
-
-        st.session_state.tp_fetch_done = True
-        tp_progress.empty()
-        tp_status.empty()
-        tp_debug.empty()
-        if st.session_state.trustpilot_df is not None:
+            st.session_state.tp_fetch_done = True
+            tp_status.empty()
             st.rerun()
 
     st.divider()
