@@ -97,14 +97,12 @@ def fetch_reviews_simple(app_id, country, max_pages, cutoff_date):
     return all_reviews
 
 
-def fetch_reviews(app_id, country, max_pages, cutoff_date, fetch_mode, progress_bar, status_text):
+def fetch_reviews(app_id, country, max_pages, cutoff_date, progress_bar, status_text):
     all_reviews = []
-    hard_limit = 50
 
-    for page in range(1, (max_pages if fetch_mode == "By number of pages" else hard_limit) + 1):
-        display_max = max_pages if fetch_mode == "By number of pages" else hard_limit
-        progress_bar.progress(page / display_max, text=f"Fetching page {page}...")
-        status_text.text(f"Fetching page {page}...")
+    for page in range(1, max_pages + 1):
+        progress_bar.progress(page / max_pages, text=f"Fetching page {page}/{max_pages}...")
+        status_text.text(f"Fetching page {page}/{max_pages}...")
 
         url = build_url(country, app_id, page)
         try:
@@ -209,6 +207,74 @@ STOP_WORDS = {
     "parte", "volta", "anno", "anni", "giorno", "giorni",
 }
 
+POSITIVE_WORDS = {
+    "great", "excellent", "amazing", "love", "best", "perfect", "awesome",
+    "fantastic", "good", "wonderful", "helpful", "easy", "beautiful",
+    "recommend", "useful", "nice", "brilliant", "superb", "outstanding",
+    "intuitive", "smooth", "fast", "reliable", "convenient", "favorite",
+    "enjoy", "happy", "pleased", "satisfied", "impressive", "simple",
+    "clean", "elegant", "powerful", "efficient", "quick", "stable",
+    "ottimo", "ottima", "eccellente", "fantastico", "fantastica",
+    "perfetto", "perfetta", "bellissimo", "bellissima", "stupendo",
+    "stupenda", "comodo", "comoda", "utile", "facile", "veloce",
+    "affidabile", "consiglio", "consigliato", "pratico", "pratica",
+    "funziona", "funzionale", "intuitivo", "intuitiva", "soddisfatto",
+    "soddisfatta", "contento", "contenta", "bravi", "bravo", "brava",
+    "migliore", "semplice", "efficiente", "stabile", "meraviglioso",
+    "meravigliosa", "adoro", "eccezionale", "splendido", "splendida",
+}
+
+NEGATIVE_WORDS = {
+    "bad", "terrible", "horrible", "worst", "hate", "awful", "poor",
+    "useless", "broken", "slow", "crash", "bug", "error", "annoying",
+    "frustrating", "disappointing", "waste", "ugly", "complicated",
+    "confusing", "unreliable", "expensive", "laggy", "glitch",
+    "freeze", "stuck", "problem", "issue", "fail", "failed", "spam",
+    "scam", "sucks", "unusable", "nightmare", "ridiculous", "lacking",
+    "pessimo", "pessima", "terribile", "orribile", "brutto", "brutta",
+    "lento", "lenta", "inutile", "rotto", "rotta", "crash",
+    "errore", "fastidioso", "fastidiosa", "frustrante", "deludente",
+    "complicato", "complicata", "confuso", "confusa", "costoso",
+    "costosa", "problema", "problemi", "difetto", "difetti",
+    "blocca", "bloccato", "bloccata", "peggiore", "schifo",
+    "vergogna", "vergognoso", "vergognosa", "incapaci",
+    "malfunzionamento", "disastro", "disastroso", "disastrosa",
+}
+
+
+def compute_sentiment(texts):
+    pos_count = 0
+    neg_count = 0
+    total_words = 0
+    for text in texts:
+        words = re.findall(r"[a-zA-ZàèéìòùÀÈÉÌÒÙ]{3,}", text.lower())
+        total_words += len(words)
+        for w in words:
+            if w in POSITIVE_WORDS:
+                pos_count += 1
+            elif w in NEGATIVE_WORDS:
+                neg_count += 1
+
+    sentiment_total = pos_count + neg_count
+    if sentiment_total == 0:
+        return {"score": 0.0, "label": "Neutral", "positive": 0, "negative": 0, "total_words": total_words}
+
+    score = (pos_count - neg_count) / sentiment_total
+    if score > 0.2:
+        label = "Positive"
+    elif score < -0.2:
+        label = "Negative"
+    else:
+        label = "Mixed"
+
+    return {
+        "score": round(score, 2),
+        "label": label,
+        "positive": pos_count,
+        "negative": neg_count,
+        "total_words": total_words,
+    }
+
 
 def extract_keywords(texts, top_n=30):
     word_counts = Counter()
@@ -293,21 +359,17 @@ with st.sidebar:
     app_id = st.text_input("App Store App ID", value="", placeholder="e.g. 284882215")
     country_code = st.text_input("Country Code", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
 
-    st.subheader("Fetch Mode")
-    fetch_mode = st.radio("How to limit fetching", ["By number of pages", "By time period"], horizontal=True)
+    st.subheader("Fetch Limits")
+    time_period = st.select_slider(
+        "Time period",
+        options=["1 month", "3 months", "6 months", "1 year"],
+        value="1 year",
+    )
+    period_map = {"1 month": 30, "3 months": 90, "6 months": 180, "1 year": 365}
+    time_days = period_map[time_period]
 
-    if fetch_mode == "By number of pages":
-        max_pages = st.number_input("Max Pages to Fetch", min_value=1, max_value=50, value=10)
-        time_days = 365
-    else:
-        time_period = st.select_slider(
-            "Time period",
-            options=["1 month", "3 months", "6 months", "1 year"],
-            value="1 year",
-        )
-        period_map = {"1 month": 30, "3 months": 90, "6 months": 180, "1 year": 365}
-        time_days = period_map[time_period]
-        max_pages = 50
+    max_pages = st.number_input("Max Pages to Fetch", min_value=1, max_value=50, value=10,
+                                help="Fetching stops when all pages are fetched OR all reviews are older than the time period — whichever comes first.")
 
     output_filename = st.text_input("Output Filename", value="app_reviews.xlsx")
     if not output_filename.endswith(".xlsx"):
@@ -327,7 +389,7 @@ if fetch_button:
 
             reviews = fetch_reviews(
                 app_id.strip(), country_code.strip(), max_pages,
-                cutoff_date, fetch_mode, progress_bar, status_text,
+                cutoff_date, progress_bar, status_text,
             )
 
             if not reviews:
@@ -438,10 +500,37 @@ with tabs[1]:
         negative_pct = len(df[df["rating"] <= 2]) / total * 100
         positive_pct = len(df[df["rating"] >= 4]) / total * 100
 
-        m1, m2, m3 = st.columns(3)
+        all_texts = (df["title"].fillna("") + " " + df["review"].fillna("")).tolist()
+        sentiment = compute_sentiment(all_texts)
+
+        m1, m2, m3, m4 = st.columns(4)
         m1.metric("Average Rating", f"{avg_rating:.1f} ⭐")
         m2.metric("Positive (4-5⭐)", f"{positive_pct:.0f}%")
         m3.metric("Negative (1-2⭐)", f"{negative_pct:.0f}%")
+
+        sentiment_emoji = {"Positive": "😊", "Negative": "😟", "Mixed": "😐", "Neutral": "😶"}
+        m4.metric(
+            "Sentiment",
+            f"{sentiment_emoji.get(sentiment['label'], '')} {sentiment['label']}",
+            help=f"Score: {sentiment['score']} (positive words: {sentiment['positive']}, negative words: {sentiment['negative']})",
+        )
+
+        st.divider()
+
+        st.subheader("Sentiment Breakdown")
+        st.caption("Analysis of positive and negative language used across all reviews.")
+
+        sent_col1, sent_col2, sent_col3 = st.columns(3)
+        sent_col1.metric("Positive Words Found", sentiment["positive"])
+        sent_col2.metric("Negative Words Found", sentiment["negative"])
+        score_display = f"{sentiment['score']:+.2f}"
+        sent_col3.metric("Sentiment Score", score_display, help="Range: -1.0 (very negative) to +1.0 (very positive)")
+
+        sent_chart_data = pd.DataFrame({
+            "Type": ["Positive", "Negative"],
+            "Count": [sentiment["positive"], sentiment["negative"]],
+        })
+        st.bar_chart(sent_chart_data, x="Type", y="Count")
 
         st.divider()
 
@@ -495,20 +584,47 @@ with tabs[1]:
 
         st.divider()
 
-        st.subheader("Version Comparison")
-        st.caption("How ratings vary across app versions.")
-        ver_df = df[df["version"] != "N/A"]
+        st.subheader("Version Insights")
+        st.caption("How ratings and review volume vary across app versions.")
+        ver_df = df[df["version"] != "N/A"].copy()
         if ver_df.empty:
             st.info("No version information available in reviews.")
         else:
             ver_stats = ver_df.groupby("version").agg(
                 reviews=("rating", "size"),
                 avg_rating=("rating", "mean"),
+                earliest=("date", "min"),
             ).reset_index()
-            ver_stats.columns = ["Version", "Reviews", "Avg Rating"]
-            ver_stats["Avg Rating"] = ver_stats["Avg Rating"].round(2)
-            ver_stats = ver_stats.sort_values("Reviews", ascending=False).head(15)
-            st.dataframe(ver_stats, use_container_width=True, hide_index=True)
+            ver_stats = ver_stats.sort_values("earliest")
+            ver_stats = ver_stats[ver_stats["reviews"] >= 2]
+
+            if ver_stats.empty:
+                st.info("Not enough reviews per version to generate a meaningful chart.")
+            else:
+                top_versions = ver_stats.tail(15)
+
+                chart_versions = top_versions.copy()
+                chart_versions["avg_rating"] = chart_versions["avg_rating"].round(2)
+
+                st.markdown("**Average Rating by Version**")
+                rating_chart = pd.DataFrame({
+                    "Version": chart_versions["version"].values,
+                    "Avg Rating": chart_versions["avg_rating"].values,
+                })
+                st.bar_chart(rating_chart, x="Version", y="Avg Rating")
+
+                st.markdown("**Number of Reviews by Version**")
+                count_chart = pd.DataFrame({
+                    "Version": chart_versions["version"].values,
+                    "Reviews": chart_versions["reviews"].values,
+                })
+                st.bar_chart(count_chart, x="Version", y="Reviews")
+
+                st.markdown("**Details**")
+                display_stats = top_versions[["version", "reviews", "avg_rating"]].copy()
+                display_stats.columns = ["Version", "Reviews", "Avg Rating"]
+                display_stats["Avg Rating"] = display_stats["Avg Rating"].round(2)
+                st.dataframe(display_stats, use_container_width=True, hide_index=True)
 
 with tabs[2]:
     st.markdown("### Compare Multiple Apps")
@@ -539,7 +655,7 @@ with tabs[2]:
         max_value=50,
         value=10,
         key="comp_pages",
-        help="How many RSS pages to fetch per app (more = slower but more reviews)",
+        help="Fetching stops at page limit OR time period — whichever comes first",
     )
 
     st.subheader("Apps to Compare")
@@ -628,24 +744,27 @@ with tabs[2]:
         for aid, cdf in comp_data.items():
             name = app_names.get(aid, aid)
             total = len(cdf)
+            texts = (cdf["title"].fillna("") + " " + cdf["review"].fillna("")).tolist() if total > 0 else []
+            sent = compute_sentiment(texts)
             if total > 0:
                 avg = cdf["rating"].mean()
                 pos = len(cdf[cdf["rating"] >= 4]) / total * 100
                 neg = len(cdf[cdf["rating"] <= 2]) / total * 100
-                r1 = len(cdf[cdf["rating"] == 1])
-                r2 = len(cdf[cdf["rating"] == 2])
-                r3 = len(cdf[cdf["rating"] == 3])
-                r4 = len(cdf[cdf["rating"] == 4])
-                r5 = len(cdf[cdf["rating"] == 5])
             else:
                 avg = pos = neg = 0
-                r1 = r2 = r3 = r4 = r5 = 0
+
+            r1 = len(cdf[cdf["rating"] == 1]) if total > 0 else 0
+            r2 = len(cdf[cdf["rating"] == 2]) if total > 0 else 0
+            r3 = len(cdf[cdf["rating"] == 3]) if total > 0 else 0
+            r4 = len(cdf[cdf["rating"] == 4]) if total > 0 else 0
+            r5 = len(cdf[cdf["rating"] == 5]) if total > 0 else 0
 
             summary_rows.append({
                 "App": name,
                 "ID": aid,
                 "Reviews": total,
                 "Avg Rating": round(avg, 1),
+                "Sentiment": f"{sent['label']} ({sent['score']:+.2f})",
                 "Positive %": f"{pos:.0f}%",
                 "Negative %": f"{neg:.0f}%",
                 "⭐": r1,
@@ -657,6 +776,33 @@ with tabs[2]:
 
         summary_df = pd.DataFrame(summary_rows)
         st.dataframe(summary_df, use_container_width=True, hide_index=True)
+
+        st.divider()
+
+        st.subheader("Sentiment Comparison")
+        sent_rows = []
+        for aid, cdf in comp_data.items():
+            name = app_names.get(aid, aid)
+            total = len(cdf)
+            if total > 0:
+                texts = (cdf["title"].fillna("") + " " + cdf["review"].fillna("")).tolist()
+                sent = compute_sentiment(texts)
+                sent_rows.append({
+                    "App": name,
+                    "Positive Words": sent["positive"],
+                    "Negative Words": sent["negative"],
+                    "Score": sent["score"],
+                })
+
+        if sent_rows:
+            sent_df = pd.DataFrame(sent_rows)
+            st.dataframe(sent_df, use_container_width=True, hide_index=True)
+
+            score_chart = pd.DataFrame({
+                "App": [r["App"] for r in sent_rows],
+                "Sentiment Score": [r["Score"] for r in sent_rows],
+            })
+            st.bar_chart(score_chart, x="App", y="Sentiment Score")
 
         st.divider()
 
