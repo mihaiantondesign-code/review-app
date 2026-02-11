@@ -1,0 +1,87 @@
+You are an expert Python engineer and data engineer.
+
+Your task is to PLAN FIRST and then IMPLEMENT a small, reliable Python project on Replit that:
+
+GOAL
+- Fetches Apple App Store user reviews using Apple’s public RSS JSON feed (NOT HTML scraping)
+- Extracts user-written review text (full comment), title, rating, date, author, and app version
+- Filters reviews to ONLY the last 365 days
+- Categorizes reviews by rating (1–5 stars)
+- Exports the results to an Excel (.xlsx) file
+- Runs correctly in Replit (Python repl)
+
+STRICT CONSTRAINTS
+- Do NOT scrape App Store web pages
+- Use ONLY the Apple RSS JSON feed
+- Do NOT use unofficial APIs or paid services
+- Do NOT require API keys
+- Do NOT use AI/LLM calls at runtime
+- Keep the code simple, readable, and robust
+- Use only these libraries:
+  - requests
+  - pandas
+  - openpyxl
+
+INPUT CONFIGURATION
+- App Store App ID must be configurable at the top of the script
+- Country code must be configurable (default: "it")
+- Maximum number of RSS pages must be configurable
+- Output filename must be configurable
+
+APPLE RSS FEED FORMAT
+Base URL pattern:
+https://itunes.apple.com/{country}/rss/customerreviews/id={APP_ID}/sortBy=mostRecent/json
+
+Pagination:
+- First page: base URL
+- Next pages: append /page={page_number}
+
+IMPORTANT FEED DETAILS
+- The first "entry" in the feed is app metadata and must be skipped
+- Review text is in: entry["content"]["label"]
+- Review title is in: entry["title"]["label"]
+- Rating is in: entry["im:rating"]["label"]
+- Review date is in: entry["updated"]["label"] (ISO format)
+- Author is in: entry["author"]["name"]["label"]
+- App version may be missing and must be handled safely
+
+FUNCTIONAL REQUIREMENTS
+1. Fetch pages sequentially until:
+   - max pages is reached OR
+   - no more valid review entries are returned
+2. Parse reviews safely with try/except
+3. Convert dates to Python datetime
+4. Filter out reviews older than 365 days
+5. Store results in a pandas DataFrame
+6. Sort reviews by date descending
+7. Export to Excel with:
+   - One sheet per rating (1_stelle, 2_stelle, etc.)
+   - Columns:
+     date, rating, title, review, author, version
+
+OUTPUT
+- A single Excel file saved in the Replit file system
+- Print a clear success message showing:
+  - number of reviews saved
+  - output filename
+
+PROJECT STRUCTURE
+- main.py (single file is fine)
+- requirements.txt (requests, pandas, openpyxl)
+
+PROCESS REQUIREMENT
+Before writing code:
+1. Briefly outline the execution plan in comments
+2. Then write the complete working code
+3. Do not leave TODOs
+4. Do not include explanations outside comments in the code
+
+QUALITY BAR
+- Code must run on first execution in Replit
+- No placeholder values except APP_ID
+- Clear variable names
+- Defensive programming for missing fields
+- Minimal but clean logging (print statements)
+
+DELIVERABLE
+Produce the final `main.py` content and, if needed, `requirements.txt`.
