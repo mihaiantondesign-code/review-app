@@ -7,20 +7,31 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 
-st.set_page_config(page_title="mihAI review analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="app store reviewer — mihAI", page_icon="🔍", layout="wide")
 
-st.markdown("""
+import base64
+
+def _get_logo_b64():
+    try:
+        with open("static/logo.png", "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except Exception:
+        return ""
+
+_logo_b64 = _get_logo_b64()
+
+st.markdown(f"""
 <style>
 @import url('https://cdn.jsdelivr.net/gh/AustinMaung/overused-grotesk-cdn@main/overused-grotesk.css');
 
-@font-face {
+@font-face {{
     font-family: 'Overused Grotesk';
     src: url('https://raw.githubusercontent.com/RandomMaerks/Overused-Grotesk/master/fonts/variable/OverusedGroteskRoman-VF.ttf') format('truetype');
     font-weight: 300 900;
     font-display: swap;
-}
+}}
 
-:root {
+:root {{
     --primary-dark: #1B1B19;
     --accent-blue: #1C62E3;
     --bg-white: #FFFFFF;
@@ -29,70 +40,50 @@ st.markdown("""
     --text-primary: #1B1B19;
     --text-secondary: #6B6B6B;
     --radius: 4px;
-}
+}}
 
-html, body, [class*="css"] {
+html, body, [class*="css"] {{
     font-family: 'Overused Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
-}
+}}
 
 h1, h2, h3, h4, h5, h6,
-.stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+.stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
     font-family: 'Overused Grotesk', sans-serif !important;
     font-weight: 700 !important;
     color: var(--text-primary) !important;
     letter-spacing: -0.02em;
-}
+}}
 
-p, span, label, div, li, td, th, input, textarea, select {
+p, span, label, div, li, td, th, input, textarea, select {{
     font-family: 'Overused Grotesk', sans-serif !important;
-}
+}}
 
-/* Header bar with app name */
-header[data-testid="stHeader"] {
+header[data-testid="stHeader"] {{
     background: var(--bg-white) !important;
     border-bottom: 1px solid var(--border-color) !important;
-}
+}}
 
-#mihai-header {
-    position: fixed;
-    top: 12px;
-    right: 80px;
-    z-index: 999999;
-    font-family: 'Overused Grotesk', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: -0.01em;
-    background: var(--bg-white);
-    padding: 4px 0;
-}
-#mihai-header .brand-ai {
-    color: var(--accent-blue);
-}
-
-/* Main content area */
-.stApp {
+.stApp {{
     background-color: var(--bg-white) !important;
-}
+}}
 
-section[data-testid="stSidebar"] {
+section[data-testid="stSidebar"] {{
     background-color: var(--bg-light) !important;
     border-right: 1px solid var(--border-color) !important;
-}
+}}
 
-section[data-testid="stSidebar"] .stMarkdown h1,
-section[data-testid="stSidebar"] .stMarkdown h2 {
-    font-size: 15px !important;
+section[data-testid="stSidebar"] .stMarkdown h2 {{
+    font-size: 13px !important;
     font-weight: 600 !important;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     color: var(--text-secondary) !important;
-}
+    margin-bottom: 0.3em !important;
+}}
 
-/* Primary buttons — dark black like Qonto CTA */
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"],
-button[data-testid="stBaseButton-primary"] {
+button[data-testid="stBaseButton-primary"] {{
     background-color: var(--primary-dark) !important;
     color: white !important;
     border: 1px solid #373734 !important;
@@ -104,19 +95,18 @@ button[data-testid="stBaseButton-primary"] {
     transition: all 0.15s ease !important;
     box-shadow: none !important;
     letter-spacing: -0.01em;
-}
+}}
 
 .stButton > button[kind="primary"]:hover,
 .stDownloadButton > button[kind="primary"]:hover,
-button[data-testid="stBaseButton-primary"]:hover {
+button[data-testid="stBaseButton-primary"]:hover {{
     background-color: #2A2A28 !important;
     border-color: #4A4A47 !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
-}
+}}
 
-/* Secondary buttons */
 .stButton > button[kind="secondary"],
-button[data-testid="stBaseButton-secondary"] {
+button[data-testid="stBaseButton-secondary"] {{
     background-color: var(--bg-white) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--border-color) !important;
@@ -126,22 +116,21 @@ button[data-testid="stBaseButton-secondary"] {
     font-size: 14px !important;
     padding: 8px 20px !important;
     box-shadow: none !important;
-}
+}}
 
 .stButton > button[kind="secondary"]:hover,
-button[data-testid="stBaseButton-secondary"]:hover {
+button[data-testid="stBaseButton-secondary"]:hover {{
     background-color: var(--bg-light) !important;
     border-color: #CCCCCC !important;
-}
+}}
 
-/* Tabs — clean underline style */
-.stTabs [data-baseweb="tab-list"] {
+.stTabs [data-baseweb="tab-list"] {{
     gap: 0 !important;
     border-bottom: 1px solid var(--border-color) !important;
     background: transparent !important;
-}
+}}
 
-.stTabs [data-baseweb="tab"] {
+.stTabs [data-baseweb="tab"] {{
     font-family: 'Overused Grotesk', sans-serif !important;
     font-weight: 500 !important;
     font-size: 14px !important;
@@ -150,114 +139,125 @@ button[data-testid="stBaseButton-secondary"]:hover {
     border: none !important;
     background: transparent !important;
     border-radius: 0 !important;
-}
+}}
 
-.stTabs [aria-selected="true"] {
+.stTabs [aria-selected="true"] {{
     color: var(--text-primary) !important;
     font-weight: 600 !important;
     border-bottom: 2px solid var(--primary-dark) !important;
-}
+}}
 
-/* Metrics — clean card style */
-[data-testid="stMetric"] {
+[data-testid="stMetric"] {{
     background: var(--bg-light) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius) !important;
     padding: 16px !important;
-}
+}}
 
-[data-testid="stMetricLabel"] {
+[data-testid="stMetricLabel"] {{
     font-size: 12px !important;
     font-weight: 500 !important;
     color: var(--text-secondary) !important;
     text-transform: uppercase !important;
     letter-spacing: 0.04em !important;
-}
+}}
 
-[data-testid="stMetricValue"] {
+[data-testid="stMetricValue"] {{
     font-size: 22px !important;
     font-weight: 700 !important;
     color: var(--text-primary) !important;
-}
+}}
 
-/* Expanders — clean borders */
-.streamlit-expanderHeader {
-    font-family: 'Overused Grotesk', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 14px !important;
+details[data-testid="stExpander"] {{
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius) !important;
-    background: var(--bg-white) !important;
-}
+}}
 
-details[data-testid="stExpander"] {
+.stDataFrame {{
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius) !important;
-}
+}}
 
-/* Dataframes — subtle borders */
-.stDataFrame {
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius) !important;
-}
-
-/* Inputs */
 .stTextInput > div > div > input,
 .stNumberInput > div > div > input,
-.stSelectbox > div > div {
+.stSelectbox > div > div {{
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius) !important;
     font-family: 'Overused Grotesk', sans-serif !important;
     font-size: 14px !important;
-}
+}}
 
 .stTextInput > div > div > input:focus,
-.stNumberInput > div > div > input:focus {
+.stNumberInput > div > div > input:focus {{
     border-color: var(--primary-dark) !important;
     box-shadow: 0 0 0 1px var(--primary-dark) !important;
-}
+}}
 
-/* Dividers */
-hr {
+hr {{
     border-color: var(--border-color) !important;
     opacity: 0.5 !important;
-}
+}}
 
-/* Progress bar */
-.stProgress > div > div > div > div {
+.stProgress > div > div > div > div {{
     background-color: var(--primary-dark) !important;
-}
+}}
 
-/* Alerts — subtle styling */
-.stAlert {
+.stAlert {{
     border-radius: var(--radius) !important;
     font-size: 14px !important;
-}
+}}
 
-/* Download button alignment */
-.stDownloadButton {
-    margin-top: 8px;
-}
-
-/* Caption text */
-.stCaption, [data-testid="stCaptionContainer"] {
+.stCaption, [data-testid="stCaptionContainer"] {{
     color: var(--text-secondary) !important;
     font-size: 13px !important;
-}
+}}
 
-/* Subheader styling */
-.stMarkdown h3 {
+.stMarkdown h3 {{
     font-size: 20px !important;
     margin-top: 0.5em !important;
-}
+}}
 
-/* Bar chart clean */
-.stBarChart {
-    border-radius: var(--radius);
-}
+.empty-state {{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin: 20px 0;
+}}
+.empty-state .empty-icon {{
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}}
+.empty-state .empty-title {{
+    font-family: 'Overused Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}}
+.empty-state .empty-desc {{
+    font-family: 'Overused Grotesk', sans-serif;
+    font-size: 14px;
+    color: var(--text-secondary);
+    max-width: 400px;
+}}
+
+.seg-control {{
+    display: flex;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 3px;
+    gap: 2px;
+    margin-bottom: 24px;
+}}
 </style>
-
-<div id="mihai-header">mih<span class="brand-ai">AI</span> review analyzer</div>
 """, unsafe_allow_html=True)
 
 for key, default in [
@@ -1057,69 +1057,121 @@ def render_insights_section(data_df, section_key):
     render_themes_with_all_reviews(wins, data_df, section_key, is_problem=False)
 
 
-# ─── SIDEBAR: App Store only ───
+def render_empty_state(icon, title, description):
+    st.markdown(f"""
+    <div class="empty-state">
+        <div class="empty-icon">{icon}</div>
+        <div class="empty-title">{title}</div>
+        <div class="empty-desc">{description}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─── SIDEBAR ───
 with st.sidebar:
-    st.header("App Store Configuration")
-    app_id = st.text_input("App Store App ID", value="", placeholder="e.g. 284882215")
-    country_code = st.text_input("Country Code", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
+    if _logo_b64:
+        st.markdown(
+            f'<img src="data:image/png;base64,{_logo_b64}" style="width:120px;margin-bottom:20px;">',
+            unsafe_allow_html=True,
+        )
 
-    st.subheader("Fetch Limits")
-    time_period = st.select_slider(
-        "Time period",
-        options=["1 month", "3 months", "6 months", "1 year"],
-        value="1 year",
-    )
-    period_map = {"1 month": 30, "3 months": 90, "6 months": 180, "1 year": 365}
-    time_days = period_map[time_period]
+    st.markdown("## App Store")
+    app_id = st.text_input("App ID", value="", placeholder="e.g. 284882215", key="app_id_input")
+    country_code = st.text_input("Country", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
 
-    max_pages = st.number_input("Max Pages to Fetch", min_value=1, max_value=50, value=10,
-                                help="Fetching stops when all pages are fetched OR all reviews are older than the time period — whichever comes first.")
+    st.markdown("## Fetch Mode")
+    fetch_mode = st.radio("Fetch by", ["Time period", "Pages"], horizontal=True, key="fetch_mode", label_visibility="collapsed")
 
-    output_filename = st.text_input("Output Filename", value="app_reviews.xlsx")
-    if not output_filename.endswith(".xlsx"):
-        output_filename += ".xlsx"
-    fetch_button = st.button("Fetch App Store Reviews", type="primary", disabled=not app_id.strip())
+    if fetch_mode == "Time period":
+        use_precision = st.checkbox("Precision dates", value=False, key="use_precision_dates")
+        if use_precision:
+            date_col1, date_col2 = st.columns(2)
+            with date_col1:
+                from_date = st.date_input("From", value=datetime.now().date() - timedelta(days=365), key="from_date")
+            with date_col2:
+                to_date = st.date_input("To", value=datetime.now().date(), key="to_date")
+            if to_date < from_date:
+                st.warning("'To' date is before 'From' date — swapping them.")
+                from_date, to_date = to_date, from_date
+            time_days = (to_date - from_date).days
+            cutoff_date_val = datetime(from_date.year, from_date.month, from_date.day, tzinfo=timezone.utc)
+            end_date_val = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59, tzinfo=timezone.utc)
+        else:
+            months_val = st.slider("Months back", min_value=1, max_value=24, value=12, step=1, key="months_slider")
+            time_days = months_val * 30
+            cutoff_date_val = None
+            end_date_val = None
+        max_pages = 50
+    else:
+        max_pages = st.number_input("Pages to fetch", min_value=1, max_value=50, value=10, key="max_pages_input",
+                                    help="Each page contains ~50 reviews from the RSS feed.")
+        time_days = 365 * 10
+        cutoff_date_val = None
+        end_date_val = None
 
-# ─── TABS ───
-tabs = st.tabs(["Reviews", "Insights", "Trustpilot", "Comparison"])
+    fetch_button = st.button("Fetch Reviews", type="primary", disabled=not app_id.strip())
+
+    st.markdown("---")
+
+# ─── SEGMENTED CONTROL ───
+if "active_section" not in st.session_state:
+    st.session_state.active_section = "App Store"
+
+seg_cols = st.columns(3)
+for i, label in enumerate(["App Store", "Trustpilot", "Comparison"]):
+    with seg_cols[i]:
+        btn_type = "primary" if st.session_state.active_section == label else "secondary"
+        if st.button(label, key=f"seg_{label}", type=btn_type, use_container_width=True):
+            st.session_state.active_section = label
+            st.rerun()
+
+st.markdown("")
 
 # ─── APP STORE FETCH ───
 if fetch_button:
     if not app_id.strip():
         st.error("Please enter a valid App Store App ID.")
     else:
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_days)
-        with tabs[0]:
-            progress_bar = st.progress(0, text="Starting App Store fetch...")
-            status_text = st.empty()
+        if cutoff_date_val:
+            cutoff_date = cutoff_date_val
+        else:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_days)
 
-            reviews = fetch_reviews(
-                app_id.strip(), country_code.strip(), max_pages,
-                cutoff_date, progress_bar, status_text,
-            )
+        progress_bar = st.progress(0, text="Starting App Store fetch...")
+        status_text = st.empty()
 
-            if not reviews:
-                st.warning("No App Store reviews found for this app/country/time combination.")
-                st.session_state.reviews_df = None
-                st.session_state.fetch_done = True
-            else:
-                app_df = pd.DataFrame(reviews)
-                app_df = app_df.sort_values("date", ascending=False).reset_index(drop=True)
-                st.session_state.reviews_df = app_df
-                st.session_state.fetch_done = True
-                progress_bar.empty()
-                status_text.empty()
-                st.rerun()
+        reviews = fetch_reviews(
+            app_id.strip(), country_code.strip(), max_pages,
+            cutoff_date, progress_bar, status_text,
+        )
+
+        if not reviews:
+            st.warning("No App Store reviews found for this app/country/time combination.")
+            st.session_state.reviews_df = None
+            st.session_state.fetch_done = True
+        else:
+            app_df = pd.DataFrame(reviews)
+            app_df = app_df.sort_values("date", ascending=False).reset_index(drop=True)
+            if end_date_val is not None:
+                app_df = app_df[app_df["date"] <= end_date_val].reset_index(drop=True)
+            st.session_state.reviews_df = app_df
+            st.session_state.fetch_done = True
+            progress_bar.empty()
+            status_text.empty()
+            st.rerun()
 
 df = st.session_state.reviews_df
+active = st.session_state.active_section
 
-# ─── TAB 0: Reviews ───
-with tabs[0]:
+# ═══════════════════════════════════════
+# SECTION: App Store (Reviews + Insights)
+# ═══════════════════════════════════════
+if active == "App Store":
     if df is None or df.empty:
         if st.session_state.fetch_done:
-            st.info("No App Store reviews were found. Try adjusting your settings in the sidebar.")
+            render_empty_state("🔍", "No reviews found", "Try adjusting your App ID, country, or time range in the sidebar.")
         else:
-            st.info("Configure your App ID and settings in the sidebar, then click **Fetch App Store Reviews** to get started.")
+            render_empty_state("📱", "No results yet", "Enter an App Store ID in the sidebar and click Fetch Reviews to get started.")
     else:
         total = len(df)
         avg = df["rating"].mean()
@@ -1188,21 +1240,17 @@ with tabs[0]:
         st.divider()
         excel_data = create_excel(filtered)
         st.download_button(
-            label=f"Download {output_filename}",
+            label="Download Reviews (Excel)",
             data=excel_data,
-            file_name=output_filename,
+            file_name="app_reviews.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             type="primary",
         )
 
-# ─── TAB 1: Insights ───
-with tabs[1]:
-    if df is None or df.empty:
-        if st.session_state.fetch_done:
-            st.info("No reviews to analyze. Try adjusting your settings.")
-        else:
-            st.info("Fetch App Store reviews first using the sidebar to see insights here.")
-    else:
+        # ─── Insights sub-section (same page) ───
+        st.divider()
+        st.markdown("### Insights")
+
         render_insights_section(df, "appstore_insights")
 
         st.divider()
@@ -1225,7 +1273,6 @@ with tabs[1]:
                 st.info("Not enough reviews per version to generate a meaningful chart.")
             else:
                 top_versions = ver_stats.tail(15)
-
                 chart_versions = top_versions.copy()
                 chart_versions["avg_rating"] = chart_versions["avg_rating"].round(2)
 
@@ -1249,10 +1296,13 @@ with tabs[1]:
                 display_stats["Avg Rating"] = display_stats["Avg Rating"].round(2)
                 st.dataframe(display_stats, use_container_width=True, hide_index=True)
 
-# ─── TAB 2: Trustpilot (fully independent) ───
-with tabs[2]:
+
+# ═══════════════════════════
+# SECTION: Trustpilot
+# ═══════════════════════════
+elif active == "Trustpilot":
     st.markdown("### Trustpilot Reviews")
-    st.caption("Fetch and analyze reviews from Trustpilot. This section is completely independent from the App Store.")
+    st.caption("Fetch and analyze reviews from Trustpilot. Independent from App Store data.")
 
     tp_col1, tp_col2, tp_col3 = st.columns([3, 2, 2])
     with tp_col1:
@@ -1264,14 +1314,8 @@ with tabs[2]:
             key="tp_domain_input",
         )
     with tp_col2:
-        tp_time_period = st.select_slider(
-            "Time period",
-            options=["1 month", "3 months", "6 months", "1 year"],
-            value="1 year",
-            key="tp_time_period",
-        )
-        tp_period_map = {"1 month": 30, "3 months": 90, "6 months": 180, "1 year": 365}
-        tp_time_days = tp_period_map[tp_time_period]
+        tp_months = st.slider("Months back", min_value=1, max_value=24, value=12, step=1, key="tp_months")
+        tp_time_days = tp_months * 30
     with tp_col3:
         tp_max_pages = st.number_input(
             "Max pages",
@@ -1279,7 +1323,7 @@ with tabs[2]:
             max_value=50,
             value=10,
             key="tp_max_pages",
-            help="Each page contains ~20 reviews. Fetching stops at page limit or when reviews are too old.",
+            help="Each page contains ~20 reviews.",
         )
 
     tp_fetch = st.button("Fetch Trustpilot Reviews", type="primary", disabled=not trustpilot_domain.strip(), key="tp_fetch_btn")
@@ -1292,7 +1336,7 @@ with tabs[2]:
         tp_debug = st.empty()
 
         domain_clean = _clean_trustpilot_domain(trustpilot_domain)
-        tp_debug.info(f"Fetching from: trustpilot.com/review/{domain_clean} — cutoff: {tp_cutoff.strftime('%Y-%m-%d')}")
+        tp_debug.info(f"Fetching from: trustpilot.com/review/{domain_clean}")
 
         tp_reviews, tp_info = fetch_trustpilot_reviews(
             domain_clean, tp_max_pages, tp_cutoff,
@@ -1305,9 +1349,9 @@ with tabs[2]:
 
         if not tp_reviews:
             if tp_info:
-                st.warning(f"Connected to Trustpilot ({tp_info['name']}, {tp_info['totalReviews']} total reviews) but no reviews matched the time period. Try increasing the time range.")
+                st.warning(f"Connected to Trustpilot ({tp_info['name']}, {tp_info['totalReviews']} total reviews) but no reviews matched. Try increasing the time range.")
             else:
-                st.error("Could not connect to Trustpilot. Check the status message above for details.")
+                st.error("Could not connect to Trustpilot. Check the domain and try again.")
             st.session_state.trustpilot_df = None
             st.session_state.tp_fetch_done = True
         else:
@@ -1325,9 +1369,9 @@ with tabs[2]:
 
     if tp_df is None or (hasattr(tp_df, 'empty') and tp_df.empty):
         if st.session_state.tp_fetch_done:
-            st.info("No Trustpilot reviews were found. Check the domain name and try again.")
+            render_empty_state("🔍", "No Trustpilot reviews found", "Check the domain name and try again with a wider time range.")
         else:
-            st.info("Enter a Trustpilot domain above and click **Fetch Trustpilot Reviews** to get started.")
+            render_empty_state("💬", "No Trustpilot data yet", "Enter a domain above and click Fetch Trustpilot Reviews to get started.")
     else:
         if tp_info:
             st.markdown(f"### {tp_info['name']} on Trustpilot")
@@ -1339,7 +1383,6 @@ with tabs[2]:
         st.caption(f"Showing **{len(tp_df)}** reviews within the selected time period")
 
         st.divider()
-
         render_insights_section(tp_df, "trustpilot_insights")
 
         st.divider()
@@ -1369,12 +1412,15 @@ with tabs[2]:
             key="tp_download",
         )
 
-# ─── TAB 3: Comparison ───
-with tabs[3]:
+
+# ═══════════════════════════
+# SECTION: Comparison
+# ═══════════════════════════
+elif active == "Comparison":
     st.markdown("### Compare Multiple Apps")
     st.caption(
         "Enter App Store IDs of apps you want to compare. "
-        "You can find the ID in any App Store URL: `apps.apple.com/.../id**284882215**`"
+        "You can find the ID in any App Store URL: apps.apple.com/.../id**284882215**"
     )
 
     comp_country = st.text_input(
@@ -1384,14 +1430,8 @@ with tabs[3]:
         help="Same country code used for all apps in the comparison",
     )
 
-    comp_time = st.select_slider(
-        "Time period for comparison",
-        options=["1 month", "3 months", "6 months", "1 year"],
-        value="1 year",
-        key="comp_time",
-    )
-    comp_period_map = {"1 month": 30, "3 months": 90, "6 months": 180, "1 year": 365}
-    comp_days = comp_period_map[comp_time]
+    comp_months = st.slider("Months back", min_value=1, max_value=24, value=12, step=1, key="comp_months")
+    comp_days = comp_months * 30
 
     comp_pages = st.number_input(
         "Max pages per app",
@@ -1405,7 +1445,10 @@ with tabs[3]:
     st.subheader("Apps to Compare")
 
     if "comp_app_ids" not in st.session_state:
-        st.session_state.comp_app_ids = ["", ""]
+        sidebar_id = app_id.strip() if app_id.strip() else ""
+        st.session_state.comp_app_ids = [sidebar_id, ""]
+    elif st.session_state.comp_app_ids and not st.session_state.comp_app_ids[0] and app_id.strip():
+        st.session_state.comp_app_ids[0] = app_id.strip()
 
     apps_to_remove = None
     for idx in range(len(st.session_state.comp_app_ids)):
@@ -1515,11 +1558,7 @@ with tabs[3]:
                 "Sentiment": f"{sent['label']} ({sent['score']:+.2f})",
                 "Positive %": f"{pos:.0f}%",
                 "Negative %": f"{neg:.0f}%",
-                "⭐": r1,
-                "⭐⭐": r2,
-                "⭐⭐⭐": r3,
-                "⭐⭐⭐⭐": r4,
-                "⭐⭐⭐⭐⭐": r5,
+                "1s": r1, "2s": r2, "3s": r3, "4s": r4, "5s": r5,
             })
 
         summary_df = pd.DataFrame(summary_rows)
@@ -1564,7 +1603,7 @@ with tabs[3]:
                     count = len(cdf[cdf["rating"] == r])
                     chart_rows.append({
                         "App": name,
-                        "Rating": f"{r}⭐",
+                        "Rating": f"{r} star",
                         "Percentage": count / total * 100,
                     })
 
@@ -1586,7 +1625,7 @@ with tabs[3]:
                 with cols[col_idx]:
                     st.markdown(f"#### {name}")
                     avg = cdf["rating"].mean()
-                    st.markdown(f"**{avg:.1f}** ⭐ ({len(cdf)} reviews)")
+                    st.markdown(f"**{avg:.1f}** / 5 ({len(cdf)} reviews)")
 
                     st.markdown("---")
                     st.markdown("**Top Problems**")
@@ -1627,4 +1666,4 @@ with tabs[3]:
                 key="download_comparison",
             )
     elif not st.session_state.comp_fetched:
-        st.info("Enter at least 2 App IDs above and click **Compare Apps** to get started.")
+        render_empty_state("📊", "No comparison data yet", "Enter at least 2 App Store IDs above and click Compare Apps to get started.")
