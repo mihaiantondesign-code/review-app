@@ -9,16 +9,6 @@ from io import BytesIO
 
 st.set_page_config(page_title="app store reviewer — mihAI", page_icon="🔍", layout="wide")
 
-import base64
-
-def _get_logo_b64():
-    try:
-        with open("static/logo.png", "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except Exception:
-        return ""
-
-_logo_b64 = _get_logo_b64()
 
 st.markdown(f"""
 <style>
@@ -1191,11 +1181,7 @@ def render_empty_state(icon, title, description):
 
 # ─── SIDEBAR ───
 with st.sidebar:
-    if _logo_b64:
-        st.markdown(
-            f'<img src="data:image/png;base64,{_logo_b64}" style="width:120px;margin-bottom:20px;">',
-            unsafe_allow_html=True,
-        )
+    st.image("static/logo.png", width=120)
 
     st.markdown("## App Store")
     country_code = st.text_input("Country", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
