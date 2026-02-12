@@ -7,7 +7,258 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 
-st.set_page_config(page_title="App Store Reviews Exporter", page_icon="📱", layout="wide")
+st.set_page_config(page_title="mihAI review analyzer", page_icon="🔍", layout="wide")
+
+st.markdown("""
+<style>
+@import url('https://cdn.jsdelivr.net/gh/AustinMaung/overused-grotesk-cdn@main/overused-grotesk.css');
+
+@font-face {
+    font-family: 'Overused Grotesk';
+    src: url('https://raw.githubusercontent.com/RandomMaerks/Overused-Grotesk/master/fonts/variable/OverusedGroteskRoman-VF.ttf') format('truetype');
+    font-weight: 300 900;
+    font-display: swap;
+}
+
+:root {
+    --primary-dark: #1B1B19;
+    --accent-blue: #1C62E3;
+    --bg-white: #FFFFFF;
+    --bg-light: #F7F7F5;
+    --border-color: #E5E5E3;
+    --text-primary: #1B1B19;
+    --text-secondary: #6B6B6B;
+    --radius: 4px;
+}
+
+html, body, [class*="css"] {
+    font-family: 'Overused Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+.stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    font-family: 'Overused Grotesk', sans-serif !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    letter-spacing: -0.02em;
+}
+
+p, span, label, div, li, td, th, input, textarea, select {
+    font-family: 'Overused Grotesk', sans-serif !important;
+}
+
+/* Header bar with app name */
+header[data-testid="stHeader"] {
+    background: var(--bg-white) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+#mihai-header {
+    position: fixed;
+    top: 12px;
+    right: 80px;
+    z-index: 999999;
+    font-family: 'Overused Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    background: var(--bg-white);
+    padding: 4px 0;
+}
+#mihai-header .brand-ai {
+    color: var(--accent-blue);
+}
+
+/* Main content area */
+.stApp {
+    background-color: var(--bg-white) !important;
+}
+
+section[data-testid="stSidebar"] {
+    background-color: var(--bg-light) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+section[data-testid="stSidebar"] .stMarkdown h1,
+section[data-testid="stSidebar"] .stMarkdown h2 {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary) !important;
+}
+
+/* Primary buttons — dark black like Qonto CTA */
+.stButton > button[kind="primary"],
+.stDownloadButton > button[kind="primary"],
+button[data-testid="stBaseButton-primary"] {
+    background-color: var(--primary-dark) !important;
+    color: white !important;
+    border: 1px solid #373734 !important;
+    border-radius: var(--radius) !important;
+    font-family: 'Overused Grotesk', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    padding: 8px 20px !important;
+    transition: all 0.15s ease !important;
+    box-shadow: none !important;
+    letter-spacing: -0.01em;
+}
+
+.stButton > button[kind="primary"]:hover,
+.stDownloadButton > button[kind="primary"]:hover,
+button[data-testid="stBaseButton-primary"]:hover {
+    background-color: #2A2A28 !important;
+    border-color: #4A4A47 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+/* Secondary buttons */
+.stButton > button[kind="secondary"],
+button[data-testid="stBaseButton-secondary"] {
+    background-color: var(--bg-white) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    font-family: 'Overused Grotesk', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    padding: 8px 20px !important;
+    box-shadow: none !important;
+}
+
+.stButton > button[kind="secondary"]:hover,
+button[data-testid="stBaseButton-secondary"]:hover {
+    background-color: var(--bg-light) !important;
+    border-color: #CCCCCC !important;
+}
+
+/* Tabs — clean underline style */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0 !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    background: transparent !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    font-family: 'Overused Grotesk', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    color: var(--text-secondary) !important;
+    padding: 12px 20px !important;
+    border: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+
+.stTabs [aria-selected="true"] {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid var(--primary-dark) !important;
+}
+
+/* Metrics — clean card style */
+[data-testid="stMetric"] {
+    background: var(--bg-light) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    padding: 16px !important;
+}
+
+[data-testid="stMetricLabel"] {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: var(--text-secondary) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+}
+
+[data-testid="stMetricValue"] {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+}
+
+/* Expanders — clean borders */
+.streamlit-expanderHeader {
+    font-family: 'Overused Grotesk', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    background: var(--bg-white) !important;
+}
+
+details[data-testid="stExpander"] {
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+}
+
+/* Dataframes — subtle borders */
+.stDataFrame {
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+}
+
+/* Inputs */
+.stTextInput > div > div > input,
+.stNumberInput > div > div > input,
+.stSelectbox > div > div {
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    font-family: 'Overused Grotesk', sans-serif !important;
+    font-size: 14px !important;
+}
+
+.stTextInput > div > div > input:focus,
+.stNumberInput > div > div > input:focus {
+    border-color: var(--primary-dark) !important;
+    box-shadow: 0 0 0 1px var(--primary-dark) !important;
+}
+
+/* Dividers */
+hr {
+    border-color: var(--border-color) !important;
+    opacity: 0.5 !important;
+}
+
+/* Progress bar */
+.stProgress > div > div > div > div {
+    background-color: var(--primary-dark) !important;
+}
+
+/* Alerts — subtle styling */
+.stAlert {
+    border-radius: var(--radius) !important;
+    font-size: 14px !important;
+}
+
+/* Download button alignment */
+.stDownloadButton {
+    margin-top: 8px;
+}
+
+/* Caption text */
+.stCaption, [data-testid="stCaptionContainer"] {
+    color: var(--text-secondary) !important;
+    font-size: 13px !important;
+}
+
+/* Subheader styling */
+.stMarkdown h3 {
+    font-size: 20px !important;
+    margin-top: 0.5em !important;
+}
+
+/* Bar chart clean */
+.stBarChart {
+    border-radius: var(--radius);
+}
+</style>
+
+<div id="mihai-header">mih<span class="brand-ai">AI</span> review analyzer</div>
+""", unsafe_allow_html=True)
 
 for key, default in [
     ("reviews_df", None),
@@ -552,7 +803,7 @@ def render_adjusted_rating_card(metrics):
     if not metrics:
         return
 
-    st.subheader("🎯 Adjusted Rating (App Experience Only)")
+    st.subheader("Adjusted Rating — App Experience Only")
     st.caption(
         "Reviews about pricing, customer support, company policies, or physical locations "
         "are excluded to isolate feedback specifically about the app experience."
@@ -793,14 +1044,14 @@ def render_insights_section(data_df, section_key):
 
     st.divider()
 
-    st.subheader("🔴 Top 5 Problems")
+    st.subheader("Top 5 Problems")
     st.caption("The most common complaints and pain points users mention in negative reviews (1-2 stars).")
     problems = cluster_reviews_by_theme(data_df, (1, 2), top_n=5)
     render_themes_with_all_reviews(problems, data_df, section_key, is_problem=True)
 
     st.divider()
 
-    st.subheader("🟢 Top 5 Wins")
+    st.subheader("Top 5 Wins")
     st.caption("What users love most, based on positive reviews (4-5 stars).")
     wins = cluster_reviews_by_theme(data_df, (4, 5), top_n=5)
     render_themes_with_all_reviews(wins, data_df, section_key, is_problem=False)
@@ -830,7 +1081,7 @@ with st.sidebar:
     fetch_button = st.button("Fetch App Store Reviews", type="primary", disabled=not app_id.strip())
 
 # ─── TABS ───
-tabs = st.tabs(["📋 Reviews", "💡 Insights", "🏦 Trustpilot", "⚔️ Comparison"])
+tabs = st.tabs(["Reviews", "Insights", "Trustpilot", "Comparison"])
 
 # ─── APP STORE FETCH ───
 if fetch_button:
@@ -1000,7 +1251,7 @@ with tabs[1]:
 
 # ─── TAB 2: Trustpilot (fully independent) ───
 with tabs[2]:
-    st.markdown("### 🏦 Trustpilot Reviews")
+    st.markdown("### Trustpilot Reviews")
     st.caption("Fetch and analyze reviews from Trustpilot. This section is completely independent from the App Store.")
 
     tp_col1, tp_col2, tp_col3 = st.columns([3, 2, 2])
@@ -1338,7 +1589,7 @@ with tabs[3]:
                     st.markdown(f"**{avg:.1f}** ⭐ ({len(cdf)} reviews)")
 
                     st.markdown("---")
-                    st.markdown("**🔴 Top Problems**")
+                    st.markdown("**Top Problems**")
                     problems = cluster_reviews_by_theme(cdf, (1, 2), top_n=3)
                     if not problems:
                         st.caption("No major problems found")
@@ -1349,7 +1600,7 @@ with tabs[3]:
                                     f"> {p['example_review'][:200]}{'...' if len(p['example_review']) > 200 else ''}"
                                 )
 
-                    st.markdown("**🟢 Top Wins**")
+                    st.markdown("**Top Wins**")
                     wins = cluster_reviews_by_theme(cdf, (4, 5), top_n=3)
                     if not wins:
                         st.caption("No strong wins found")
