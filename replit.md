@@ -4,6 +4,7 @@
 A Streamlit web application that fetches Apple App Store user reviews via the public RSS JSON feed and Trustpilot reviews via web scraping, exports them to Excel (.xlsx) files. Uses a segmented control navigation with three sections: App Store (Reviews + Insights), Trustpilot, and Comparison. Includes sentiment analysis, adjusted rating metrics, and Apple-inspired design system.
 
 ## Recent Changes
+- 2026-02-12: Replaced App ID input with search-by-name using iTunes Search API — sidebar now has search field, selectbox with results, and app card preview. Comparison section also uses search. No API key needed.
 - 2026-02-12: Apple/Ive-inspired design overhaul — Inter font, pill-shaped buttons, frosted glass header, soft shadows, 12px radii. Fixed number input "arrow down" bug via CSS spinner hiding. Replaced deprecated `use_container_width` with `width="stretch"`. Theme config updated to Apple palette (#0071E3 accent, #F5F5F7 bg).
 - 2026-02-12: Major UI refactor — replaced tabs with segmented control navigation (App Store / Trustpilot / Comparison). Added logo top-left sidebar, title changed to "app store reviewer". Fetch mode: "Time period" (month slider 1-24 OR precision dates) vs "Pages" (1-50). Removed output filename. Illustrative empty states. Comparison auto-populates from sidebar App ID.
 - 2026-02-11: Added Adjusted Rating feature — classifies reviews as app-related vs non-app using keyword matching in IT+EN.
@@ -46,8 +47,16 @@ A Streamlit web application that fetches Apple App Store user reviews via the pu
 - When "Pages" is selected, cutoff is 10 years (effectively unlimited)
 - Precision dates: both from and to dates are applied (to_date filters upper bound after fetch)
 
+## App Search (Sidebar)
+- search_apps() uses iTunes Search API: https://itunes.apple.com/search?term=...&entity=software&country=...&limit=8
+- No API key needed — free public Apple endpoint
+- User types app name → selectbox shows results (name + developer) → selects → app card shown with icon, name, developer, rating
+- Selected app stored in st.session_state.selected_app (dict with id, name, developer, icon, rating, ratings_count)
+- Also supports raw numeric App ID input (auto-detected)
+- Comparison section also uses search-based app selection with confirm flow
+
 ## Key Features
-- Configurable App ID, country code in sidebar
+- App search by name via iTunes Search API (no manual ID entry needed)
 - Fetches from Apple RSS JSON feed (no scraping, no API keys)
 - Trustpilot scraping via __NEXT_DATA__ JSON extraction (no API key needed)
 - Illustrative empty states with centered icon/text

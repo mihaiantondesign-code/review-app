@@ -365,6 +365,36 @@ def lookup_app_name(app_id, country="us"):
     return f"App {app_id}"
 
 
+def search_apps(query, country="us", limit=10):
+    try:
+        resp = requests.get(
+            "https://itunes.apple.com/search",
+            params={
+                "term": query,
+                "entity": "software",
+                "country": country,
+                "limit": limit,
+            },
+            timeout=10,
+        )
+        data = resp.json()
+        results = []
+        for r in data.get("results", []):
+            results.append({
+                "id": str(r.get("trackId", "")),
+                "name": r.get("trackName", ""),
+                "developer": r.get("artistName", ""),
+                "icon": r.get("artworkUrl60", ""),
+                "bundle": r.get("bundleId", ""),
+                "price": r.get("formattedPrice", "Free"),
+                "rating": r.get("averageUserRating", 0),
+                "ratings_count": r.get("userRatingCount", 0),
+            })
+        return results
+    except Exception:
+        return []
+
+
 def parse_entry(entry):
     try:
         review_text = entry.get("content", {}).get("label", "")
@@ -1148,8 +1178,50 @@ with st.sidebar:
         )
 
     st.markdown("## App Store")
-    app_id = st.text_input("App ID", value="", placeholder="e.g. 284882215", key="app_id_input")
     country_code = st.text_input("Country", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
+
+    search_query = st.text_input("Search App", value="", placeholder="e.g. WhatsApp, Instagram...", key="app_search_input")
+
+    if "selected_app" not in st.session_state:
+        st.session_state.selected_app = None
+
+    if search_query.strip():
+        if search_query.strip().isdigit():
+            st.session_state.selected_app = {"id": search_query.strip(), "name": f"App {search_query.strip()}", "developer": "", "icon": "", "rating": 0, "ratings_count": 0}
+        else:
+            results = search_apps(search_query.strip(), country=country_code.strip() or "us", limit=8)
+            if results:
+                options = {f"{r['name']}  —  {r['developer']}": r for r in results}
+                selected_label = st.selectbox(
+                    "Select app",
+                    options=list(options.keys()),
+                    key="app_select",
+                    label_visibility="collapsed",
+                )
+                if selected_label:
+                    st.session_state.selected_app = options[selected_label]
+            else:
+                st.caption("No apps found. Try a different search term.")
+                st.session_state.selected_app = None
+    else:
+        st.session_state.selected_app = None
+
+    if st.session_state.selected_app:
+        sel = st.session_state.selected_app
+        icon_html = f'<img src="{sel["icon"]}" style="width:32px;height:32px;border-radius:8px;margin-right:10px;vertical-align:middle;">' if sel.get("icon") else ""
+        rating_str = f"{'⭐' * round(sel['rating'])} ({sel['ratings_count']:,})" if sel.get("ratings_count") else ""
+        st.markdown(
+            f'<div style="background:var(--secondary-bg);border-radius:12px;padding:10px 14px;margin:8px 0 4px 0;display:flex;align-items:center;gap:4px;">'
+            f'{icon_html}'
+            f'<div style="flex:1;min-width:0;">'
+            f'<div style="font-weight:600;font-size:13px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{sel["name"]}</div>'
+            f'<div style="font-size:11px;color:var(--text-secondary);line-height:1.3;">{sel.get("developer","")}</div>'
+            f'{"<div style=font-size:11px;color:var(--text-secondary);line-height:1.3;>" + rating_str + "</div>" if rating_str else ""}'
+            f'</div></div>',
+            unsafe_allow_html=True,
+        )
+
+    app_id = st.session_state.selected_app["id"] if st.session_state.selected_app else ""
 
     st.markdown("## Fetch Mode")
     fetch_mode = st.radio("Fetch by", ["Time period", "Pages"], horizontal=True, key="fetch_mode", label_visibility="collapsed")
@@ -1202,7 +1274,7 @@ st.markdown("")
 # ─── APP STORE FETCH ───
 if fetch_button:
     if not app_id.strip():
-        st.error("Please enter a valid App Store App ID.")
+        st.error("Please search and select an app first.")
     else:
         if cutoff_date_val:
             cutoff_date = cutoff_date_val
@@ -1243,7 +1315,7 @@ if active == "App Store":
         if st.session_state.fetch_done:
             render_empty_state("🔍", "No reviews found", "Try adjusting your App ID, country, or time range in the sidebar.")
         else:
-            render_empty_state("📱", "No results yet", "Enter an App Store ID in the sidebar and click Fetch Reviews to get started.")
+            render_empty_state("📱", "No results yet", "Search for an app in the sidebar and click Fetch Reviews to get started.")
     else:
         total = len(df)
         avg = df["rating"].mean()
@@ -1516,39 +1588,73 @@ elif active == "Comparison":
 
     st.subheader("Apps to Compare")
 
-    if "comp_app_ids" not in st.session_state:
-        sidebar_id = app_id.strip() if app_id.strip() else ""
-        st.session_state.comp_app_ids = [sidebar_id, ""]
-    elif st.session_state.comp_app_ids and not st.session_state.comp_app_ids[0] and app_id.strip():
-        st.session_state.comp_app_ids[0] = app_id.strip()
+    if "comp_apps" not in st.session_state:
+        if st.session_state.selected_app:
+            st.session_state.comp_apps = [st.session_state.selected_app.copy(), None]
+        else:
+            st.session_state.comp_apps = [None, None]
+    elif st.session_state.comp_apps and st.session_state.comp_apps[0] is None and st.session_state.selected_app:
+        st.session_state.comp_apps[0] = st.session_state.selected_app.copy()
 
     apps_to_remove = None
-    for idx in range(len(st.session_state.comp_app_ids)):
-        c1, c2 = st.columns([5, 1])
-        with c1:
-            st.session_state.comp_app_ids[idx] = st.text_input(
-                f"App {idx + 1}",
-                value=st.session_state.comp_app_ids[idx],
-                key=f"comp_app_{idx}",
-                placeholder="Enter App Store ID",
+    for idx in range(len(st.session_state.comp_apps)):
+        current = st.session_state.comp_apps[idx]
+        label = f"App {idx + 1}"
+        if current:
+            icon_h = f'<img src="{current["icon"]}" style="width:20px;height:20px;border-radius:5px;margin-right:6px;vertical-align:middle;">' if current.get("icon") else ""
+            st.markdown(
+                f'<div style="background:var(--secondary-bg);border-radius:10px;padding:8px 12px;margin:4px 0;display:flex;align-items:center;">'
+                f'{icon_h}<span style="font-size:13px;font-weight:600;">{current["name"]}</span>'
+                f'<span style="font-size:11px;color:var(--text-secondary);margin-left:6px;">({current["id"]})</span>'
+                f'</div>',
+                unsafe_allow_html=True,
             )
-        with c2:
-            if len(st.session_state.comp_app_ids) > 2:
-                if st.button("Remove", key=f"remove_{idx}"):
+            c_clear, c_rm = st.columns([1, 1])
+            with c_clear:
+                if st.button("Change", key=f"comp_clear_{idx}"):
+                    st.session_state.comp_apps[idx] = None
+                    st.rerun()
+            with c_rm:
+                if len(st.session_state.comp_apps) > 2:
+                    if st.button("Remove", key=f"remove_{idx}"):
+                        apps_to_remove = idx
+        else:
+            comp_search = st.text_input(label, value="", placeholder="Search app name...", key=f"comp_search_{idx}")
+            if comp_search.strip():
+                if comp_search.strip().isdigit():
+                    st.session_state.comp_apps[idx] = {"id": comp_search.strip(), "name": f"App {comp_search.strip()}", "developer": "", "icon": "", "rating": 0, "ratings_count": 0}
+                    st.rerun()
+                else:
+                    comp_results = search_apps(comp_search.strip(), country=comp_country.strip() or "us", limit=5)
+                    if comp_results:
+                        comp_options = {f"{r['name']}  —  {r['developer']}": r for r in comp_results}
+                        comp_selected = st.selectbox(
+                            f"Select App {idx + 1}",
+                            options=list(comp_options.keys()),
+                            key=f"comp_select_{idx}",
+                            label_visibility="collapsed",
+                        )
+                        if comp_selected and st.button("Confirm", key=f"comp_confirm_{idx}"):
+                            st.session_state.comp_apps[idx] = comp_options[comp_selected]
+                            st.rerun()
+                    else:
+                        st.caption("No apps found.")
+            if not current and len(st.session_state.comp_apps) > 2:
+                if st.button("Remove", key=f"remove_empty_{idx}"):
                     apps_to_remove = idx
 
     if apps_to_remove is not None:
-        st.session_state.comp_app_ids.pop(apps_to_remove)
+        st.session_state.comp_apps.pop(apps_to_remove)
         st.rerun()
 
     bc1, bc2 = st.columns([1, 3])
     with bc1:
         if st.button("+ Add App", key="add_app"):
-            if len(st.session_state.comp_app_ids) < 10:
-                st.session_state.comp_app_ids.append("")
+            if len(st.session_state.comp_apps) < 10:
+                st.session_state.comp_apps.append(None)
                 st.rerun()
 
-    valid_ids = [aid.strip() for aid in st.session_state.comp_app_ids if aid.strip()]
+    valid_ids = [a["id"] for a in st.session_state.comp_apps if a is not None]
 
     with bc2:
         compare_button = st.button(
