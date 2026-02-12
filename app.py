@@ -103,12 +103,12 @@ section[data-testid="stSidebar"] .stMarkdown h2 {{
     margin-top: 16px !important;
 }}
 
-/* ── Primary buttons ── */
+/* ── Primary buttons (Fetch, Download — black bg white text) ── */
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"],
 button[data-testid="stBaseButton-primary"] {{
-    background-color: rgba(0,0,0,0.06) !important;
-    color: #1D1D1F !important;
+    background-color: #1D1D1F !important;
+    color: #FFFFFF !important;
     border: none !important;
     border-radius: 980px !important;
     font-family: 'Inter', -apple-system, sans-serif !important;
@@ -122,8 +122,12 @@ button[data-testid="stBaseButton-primary"] {{
 .stButton > button[kind="primary"]:hover,
 .stDownloadButton > button[kind="primary"]:hover,
 button[data-testid="stBaseButton-primary"]:hover {{
-    background-color: rgba(0,0,0,0.10) !important;
-    box-shadow: none !important;
+    background-color: #000000 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}}
+button[data-testid="stBaseButton-primary"]:disabled {{
+    background-color: rgba(0,0,0,0.06) !important;
+    color: rgba(0,0,0,0.3) !important;
 }}
 
 /* ── Secondary / segment buttons ── */
@@ -1201,57 +1205,52 @@ with st.sidebar:
     if "selected_app" not in st.session_state:
         st.session_state.selected_app = None
 
+    if "dropdown_open" not in st.session_state:
+        st.session_state.dropdown_open = False
+    if "last_search" not in st.session_state:
+        st.session_state.last_search = ""
+
     if search_query.strip():
+        if search_query.strip() != st.session_state.last_search:
+            st.session_state.last_search = search_query.strip()
+            st.session_state.dropdown_open = True
+            st.session_state.selected_app = None
+
         if search_query.strip().isdigit():
             st.session_state.selected_app = {"id": search_query.strip(), "name": f"App {search_query.strip()}", "developer": "", "icon": "", "rating": 0, "ratings_count": 0}
+            st.session_state.dropdown_open = False
         else:
             results = search_apps(search_query.strip(), country=country_code.strip() or "us", limit=10)
             if results:
-                sel_id = st.session_state.selected_app["id"] if st.session_state.selected_app else None
-                if sel_id is None:
-                    st.session_state.selected_app = results[0]
-                    sel_id = results[0]["id"]
+                sel = st.session_state.selected_app
+                sel_name = sel["name"] if sel else "Select an app..."
 
-                sel_name = ""
-                for r in results:
-                    if r["id"] == sel_id:
-                        sel_name = r["name"]
-                        break
-                if not sel_name:
-                    st.session_state.selected_app = results[0]
-                    sel_id = results[0]["id"]
-                    sel_name = results[0]["name"]
+                arrow = "▾" if st.session_state.dropdown_open else "▸"
+                toggle_label = f"{arrow}  {sel_name}"
+                if st.button(toggle_label, key="dropdown_toggle", use_container_width=True, type="secondary"):
+                    st.session_state.dropdown_open = not st.session_state.dropdown_open
+                    st.rerun()
 
-                with st.expander(f"▸  {sel_name}", expanded=False):
+                if st.session_state.dropdown_open:
                     scroll_container = st.container(height=308)
                     with scroll_container:
                         for i, r in enumerate(results):
-                            is_sel = r["id"] == sel_id
+                            is_sel = sel and sel.get("id") == r["id"]
                             stars_val = round(r.get("rating", 0))
-                            stars_str = "★" * stars_val + "☆" * (5 - stars_val) if stars_val else ""
-                            icon_img = f'<img src="{r["icon"]}" style="width:28px;height:28px;border-radius:7px;flex-shrink:0;">' if r.get("icon") else ""
-                            bg = "rgba(0,0,0,0.06)" if is_sel else "transparent"
-                            fw = "700" if is_sel else "500"
+                            stars_str = " " + "★" * stars_val + "☆" * (5 - stars_val) if stars_val else ""
                             check = "✓ " if is_sel else ""
-                            st.markdown(
-                                f'<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;'
-                                f'background:{bg};border-radius:8px;margin-bottom:2px;">'
-                                f'{icon_img}'
-                                f'<div style="flex:1;min-width:0;overflow:hidden;">'
-                                f'<div style="font-size:12px;font-weight:{fw};line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{check}{r["name"]}</div>'
-                                f'<div style="font-size:10px;color:#86868b;line-height:1.2;">{stars_str}</div>'
-                                f'</div></div>',
-                                unsafe_allow_html=True,
-                            )
-                            if not is_sel:
-                                if st.button("Select", key=f"pick_{i}", use_container_width=True):
-                                    st.session_state.selected_app = r
-                                    st.rerun()
+                            label = f"{check}{r['name']}{stars_str}"
+                            if st.button(label, key=f"pick_{i}", use_container_width=True, type="secondary"):
+                                st.session_state.selected_app = r
+                                st.session_state.dropdown_open = False
+                                st.rerun()
             else:
                 st.caption("No apps found.")
                 st.session_state.selected_app = None
     else:
         st.session_state.selected_app = None
+        st.session_state.last_search = ""
+        st.session_state.dropdown_open = False
 
     app_id = st.session_state.selected_app["id"] if st.session_state.selected_app else ""
 
@@ -1296,10 +1295,18 @@ if "active_section" not in st.session_state:
 seg_cols = st.columns(3)
 for i, label in enumerate(["App Store", "Trustpilot", "Comparison"]):
     with seg_cols[i]:
-        btn_type = "primary" if st.session_state.active_section == label else "secondary"
-        if st.button(label, key=f"seg_{label}", type=btn_type, use_container_width=True):
-            st.session_state.active_section = label
-            st.rerun()
+        is_active = st.session_state.active_section == label
+        if is_active:
+            st.markdown(
+                f'<div style="background:rgba(0,0,0,0.06);border-radius:980px;padding:10px 24px;'
+                f'text-align:center;font-family:Inter,-apple-system,sans-serif;font-size:14px;'
+                f'font-weight:600;color:#1D1D1F;letter-spacing:-0.01em;cursor:default;">{label}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            if st.button(label, key=f"seg_{label}", type="secondary", use_container_width=True):
+                st.session_state.active_section = label
+                st.rerun()
 
 st.markdown("")
 
