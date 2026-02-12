@@ -22,240 +22,313 @@ _logo_b64 = _get_logo_b64()
 
 st.markdown(f"""
 <style>
-@import url('https://cdn.jsdelivr.net/gh/AustinMaung/overused-grotesk-cdn@main/overused-grotesk.css');
-
-@font-face {{
-    font-family: 'Overused Grotesk';
-    src: url('https://raw.githubusercontent.com/RandomMaerks/Overused-Grotesk/master/fonts/variable/OverusedGroteskRoman-VF.ttf') format('truetype');
-    font-weight: 300 900;
-    font-display: swap;
-}}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {{
-    --primary-dark: #1B1B19;
-    --accent-blue: #1C62E3;
-    --bg-white: #FFFFFF;
-    --bg-light: #F7F7F5;
-    --border-color: #E5E5E3;
-    --text-primary: #1B1B19;
-    --text-secondary: #6B6B6B;
-    --radius: 4px;
+    --primary: #000000;
+    --bg: #FFFFFF;
+    --bg-secondary: #F5F5F7;
+    --bg-tertiary: #FBFBFD;
+    --border: rgba(0,0,0,0.06);
+    --border-strong: rgba(0,0,0,0.1);
+    --text-primary: #1D1D1F;
+    --text-secondary: #86868B;
+    --text-tertiary: #AEAEB2;
+    --accent: #0071E3;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.06), 0 0 1px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.04);
 }}
 
 html, body, [class*="css"] {{
-    font-family: 'Overused Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }}
 
 h1, h2, h3, h4, h5, h6,
 .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
-    font-family: 'Overused Grotesk', sans-serif !important;
-    font-weight: 700 !important;
+    font-family: 'Inter', -apple-system, 'SF Pro Display', sans-serif !important;
+    font-weight: 600 !important;
     color: var(--text-primary) !important;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
 }}
 
 p, span, label, div, li, td, th, input, textarea, select {{
-    font-family: 'Overused Grotesk', sans-serif !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
 }}
 
 header[data-testid="stHeader"] {{
-    background: var(--bg-white) !important;
-    border-bottom: 1px solid var(--border-color) !important;
+    background: rgba(255,255,255,0.72) !important;
+    backdrop-filter: saturate(180%) blur(20px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+    border-bottom: 1px solid var(--border) !important;
 }}
 
 .stApp {{
-    background-color: var(--bg-white) !important;
+    background-color: var(--bg) !important;
 }}
 
 section[data-testid="stSidebar"] {{
-    background-color: var(--bg-light) !important;
-    border-right: 1px solid var(--border-color) !important;
+    background-color: var(--bg-secondary) !important;
+    border-right: 1px solid var(--border) !important;
 }}
 
 section[data-testid="stSidebar"] .stMarkdown h2 {{
-    font-size: 13px !important;
+    font-size: 11px !important;
     font-weight: 600 !important;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: var(--text-secondary) !important;
-    margin-bottom: 0.3em !important;
+    margin-bottom: 4px !important;
+    margin-top: 16px !important;
 }}
 
+/* ── Primary buttons ── */
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"],
 button[data-testid="stBaseButton-primary"] {{
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primary) !important;
     color: white !important;
-    border: 1px solid #373734 !important;
-    border-radius: var(--radius) !important;
-    font-family: 'Overused Grotesk', sans-serif !important;
+    border: none !important;
+    border-radius: 980px !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
     font-weight: 500 !important;
     font-size: 14px !important;
-    padding: 8px 20px !important;
-    transition: all 0.15s ease !important;
+    padding: 10px 24px !important;
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
     box-shadow: none !important;
     letter-spacing: -0.01em;
 }}
-
 .stButton > button[kind="primary"]:hover,
 .stDownloadButton > button[kind="primary"]:hover,
 button[data-testid="stBaseButton-primary"]:hover {{
-    background-color: #2A2A28 !important;
-    border-color: #4A4A47 !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+    background-color: #1D1D1F !important;
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
 }}
 
+/* ── Secondary / segment buttons ── */
 .stButton > button[kind="secondary"],
 button[data-testid="stBaseButton-secondary"] {{
-    background-color: var(--bg-white) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius) !important;
-    font-family: 'Overused Grotesk', sans-serif !important;
+    background-color: transparent !important;
+    color: var(--text-secondary) !important;
+    border: none !important;
+    border-radius: 980px !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
     font-weight: 500 !important;
     font-size: 14px !important;
-    padding: 8px 20px !important;
+    padding: 10px 24px !important;
     box-shadow: none !important;
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
 }}
-
 .stButton > button[kind="secondary"]:hover,
 button[data-testid="stBaseButton-secondary"]:hover {{
-    background-color: var(--bg-light) !important;
-    border-color: #CCCCCC !important;
-}}
-
-.stTabs [data-baseweb="tab-list"] {{
-    gap: 0 !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    background: transparent !important;
-}}
-
-.stTabs [data-baseweb="tab"] {{
-    font-family: 'Overused Grotesk', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 14px !important;
-    color: var(--text-secondary) !important;
-    padding: 12px 20px !important;
-    border: none !important;
-    background: transparent !important;
-    border-radius: 0 !important;
-}}
-
-.stTabs [aria-selected="true"] {{
+    background-color: rgba(0,0,0,0.04) !important;
     color: var(--text-primary) !important;
-    font-weight: 600 !important;
-    border-bottom: 2px solid var(--primary-dark) !important;
 }}
 
+/* ── Metrics ── */
 [data-testid="stMetric"] {{
-    background: var(--bg-light) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius) !important;
-    padding: 16px !important;
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 20px !important;
+    box-shadow: var(--shadow-sm) !important;
 }}
-
 [data-testid="stMetricLabel"] {{
-    font-size: 12px !important;
-    font-weight: 500 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
     color: var(--text-secondary) !important;
     text-transform: uppercase !important;
     letter-spacing: 0.04em !important;
 }}
-
 [data-testid="stMetricValue"] {{
-    font-size: 22px !important;
+    font-size: 24px !important;
     font-weight: 700 !important;
     color: var(--text-primary) !important;
+    letter-spacing: -0.02em !important;
 }}
 
+/* ── Expanders ── */
 details[data-testid="stExpander"] {{
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden;
+}}
+details[data-testid="stExpander"] summary {{
+    font-weight: 500 !important;
+    padding: 14px 16px !important;
 }}
 
+/* ── Dataframes ── */
 .stDataFrame {{
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden;
 }}
 
+/* ── Inputs — fix arrow/spinner bug ── */
 .stTextInput > div > div > input,
 .stNumberInput > div > div > input,
 .stSelectbox > div > div {{
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius) !important;
-    font-family: 'Overused Grotesk', sans-serif !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: var(--radius-sm) !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
     font-size: 14px !important;
+    padding: 8px 12px !important;
+    background: var(--bg) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }}
-
 .stTextInput > div > div > input:focus,
 .stNumberInput > div > div > input:focus {{
-    border-color: var(--primary-dark) !important;
-    box-shadow: 0 0 0 1px var(--primary-dark) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(0,113,227,0.15) !important;
+    outline: none !important;
 }}
 
+/* Hide number input step buttons that render as broken arrows */
+.stNumberInput button[data-testid="stBaseButton-minimalIcon"],
+.stNumberInput [data-testid="stNumberInputStepUp"],
+.stNumberInput [data-testid="stNumberInputStepDown"] {{
+    opacity: 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {{
+    -webkit-appearance: none;
+    margin: 0;
+}}
+input[type="number"] {{
+    -moz-appearance: textfield;
+    appearance: textfield;
+}}
+
+/* ── Selectbox arrow fix ── */
+.stSelectbox svg {{
+    display: block !important;
+    opacity: 0.5;
+}}
+
+/* ── Dividers ── */
 hr {{
-    border-color: var(--border-color) !important;
-    opacity: 0.5 !important;
+    border: none !important;
+    border-top: 1px solid var(--border) !important;
+    margin: 24px 0 !important;
 }}
 
+/* ── Progress ── */
 .stProgress > div > div > div > div {{
-    background-color: var(--primary-dark) !important;
+    background: linear-gradient(90deg, var(--primary), #333) !important;
+    border-radius: 4px !important;
 }}
 
+/* ── Alerts ── */
 .stAlert {{
-    border-radius: var(--radius) !important;
+    border-radius: var(--radius-md) !important;
     font-size: 14px !important;
+    border: 1px solid var(--border) !important;
 }}
 
+/* ── Captions ── */
 .stCaption, [data-testid="stCaptionContainer"] {{
     color: var(--text-secondary) !important;
     font-size: 13px !important;
+    line-height: 1.5;
 }}
 
+/* ── Headings ── */
 .stMarkdown h3 {{
-    font-size: 20px !important;
+    font-size: 22px !important;
+    font-weight: 600 !important;
     margin-top: 0.5em !important;
+    letter-spacing: -0.02em;
 }}
 
+/* ── Empty State ── */
 .empty-state {{
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px;
+    padding: 80px 32px;
     text-align: center;
-    background: var(--bg-light);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin: 20px 0;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    margin: 24px 0;
 }}
 .empty-state .empty-icon {{
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.6;
+    font-size: 56px;
+    margin-bottom: 20px;
+    filter: grayscale(30%);
 }}
 .empty-state .empty-title {{
-    font-family: 'Overused Grotesk', sans-serif;
-    font-size: 18px;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 20px;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 8px;
+    letter-spacing: -0.02em;
 }}
 .empty-state .empty-desc {{
-    font-family: 'Overused Grotesk', sans-serif;
-    font-size: 14px;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 15px;
     color: var(--text-secondary);
-    max-width: 400px;
+    max-width: 360px;
+    line-height: 1.5;
 }}
 
-.seg-control {{
-    display: flex;
-    background: var(--bg-light);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 3px;
-    gap: 2px;
-    margin-bottom: 24px;
+/* ── Radio buttons ── */
+.stRadio > div {{
+    gap: 0 !important;
+}}
+.stRadio label {{
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}}
+
+/* ── Slider ── */
+.stSlider [data-testid="stThumbValue"] {{
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}}
+
+/* ── Checkbox ── */
+.stCheckbox label {{
+    font-size: 14px !important;
+}}
+
+/* ── Label styling ── */
+.stTextInput label, .stNumberInput label, .stSelectbox label,
+.stMultiSelect label, .stDateInput label, .stSlider label,
+.stRadio label, .stCheckbox label {{
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--text-primary) !important;
+}}
+
+/* ── Bar chart ── */
+.stBarChart {{
+    border-radius: var(--radius-md);
+}}
+
+/* ── Download button ── */
+.stDownloadButton {{
+    margin-top: 8px;
+}}
+
+/* ── Sidebar title ── */
+section[data-testid="stSidebar"] .stMarkdown h1 {{
+    display: none !important;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -984,7 +1057,7 @@ def render_themes_with_all_reviews(themes, source_df, section_key, is_problem=Tr
                     ].sort_values("date", ascending=False)
                     display_df = all_matching[["date", "rating", "title", "review", "author"]].copy()
                     display_df["date"] = display_df["date"].dt.strftime("%Y-%m-%d")
-                    st.dataframe(display_df, use_container_width=True, height=300, hide_index=True)
+                    st.dataframe(display_df, width="stretch", height=300, hide_index=True)
 
 
 def render_insights_section(data_df, section_key):
@@ -1023,7 +1096,7 @@ def render_insights_section(data_df, section_key):
             exc_display["Category"] = exc_display["Category"].map(
                 lambda c: CATEGORY_LABELS.get(c, c.title() if c else "")
             )
-            st.dataframe(exc_display, use_container_width=True, height=300, hide_index=True)
+            st.dataframe(exc_display, width="stretch", height=300, hide_index=True)
 
     st.divider()
 
@@ -1219,7 +1292,7 @@ if active == "App Store":
 
             drilldown_display = drilldown[["date", "title", "review", "author", "version"]].copy()
             drilldown_display["date"] = drilldown_display["date"].dt.strftime("%Y-%m-%d")
-            st.dataframe(drilldown_display, use_container_width=True, height=350)
+            st.dataframe(drilldown_display, width="stretch", height=350)
 
         st.divider()
 
@@ -1235,7 +1308,7 @@ if active == "App Store":
 
         preview = filtered.copy()
         preview["date"] = preview["date"].dt.strftime("%Y-%m-%d")
-        st.dataframe(preview, use_container_width=True, height=400)
+        st.dataframe(preview, width="stretch", height=400)
 
         st.divider()
         excel_data = create_excel(filtered)
@@ -1294,7 +1367,7 @@ if active == "App Store":
                 display_stats = top_versions[["version", "reviews", "avg_rating"]].copy()
                 display_stats.columns = ["Version", "Reviews", "Avg Rating"]
                 display_stats["Avg Rating"] = display_stats["Avg Rating"].round(2)
-                st.dataframe(display_stats, use_container_width=True, hide_index=True)
+                st.dataframe(display_stats, width="stretch", hide_index=True)
 
 
 # ═══════════════════════════
@@ -1399,7 +1472,7 @@ elif active == "Trustpilot":
 
         tp_preview = tp_filtered[["date", "rating", "title", "review", "author"]].copy()
         tp_preview["date"] = tp_preview["date"].dt.strftime("%Y-%m-%d")
-        st.dataframe(tp_preview, use_container_width=True, height=400)
+        st.dataframe(tp_preview, width="stretch", height=400)
 
         st.divider()
         tp_excel = create_excel(tp_filtered)
@@ -1562,7 +1635,7 @@ elif active == "Comparison":
             })
 
         summary_df = pd.DataFrame(summary_rows)
-        st.dataframe(summary_df, use_container_width=True, hide_index=True)
+        st.dataframe(summary_df, width="stretch", hide_index=True)
 
         st.divider()
 
@@ -1583,7 +1656,7 @@ elif active == "Comparison":
 
         if sent_rows:
             sent_df = pd.DataFrame(sent_rows)
-            st.dataframe(sent_df, use_container_width=True, hide_index=True)
+            st.dataframe(sent_df, width="stretch", hide_index=True)
 
             score_chart = pd.DataFrame({
                 "App": [r["App"] for r in sent_rows],
