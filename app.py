@@ -1240,31 +1240,49 @@ with st.sidebar:
             results = search_apps(search_query.strip(), country=country_code.strip() or "us", limit=10)
             if results:
                 sel = st.session_state.selected_app
-                scroll_container = st.container(height=340)
-                with scroll_container:
-                    for i, r in enumerate(results):
-                        is_sel = sel and sel.get("id") == r["id"]
-                        stars_val = round(r.get("rating", 0))
-                        stars_str = "★" * stars_val + "☆" * (5 - stars_val) if stars_val else ""
-                        icon_url = r.get("icon", "")
-                        check = "✓ " if is_sel else ""
-                        icol, bcol = st.columns([0.18, 0.82], vertical_alignment="center")
-                        with icol:
-                            if icon_url:
+                if sel:
+                    sel_icon = sel.get("icon", "")
+                    sel_stars = round(sel.get("rating", 0))
+                    sel_stars_str = "★" * sel_stars + "☆" * (5 - sel_stars) if sel_stars else ""
+                    icon_html = f'<img src="{sel_icon}" style="width:28px;height:28px;border-radius:7px;flex-shrink:0;">' if sel_icon else ""
+                    st.markdown(
+                        f'<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;'
+                        f'background:rgba(0,0,0,0.04);border-radius:10px;font-family:Inter,-apple-system,sans-serif;">'
+                        f'{icon_html}'
+                        f'<div style="overflow:hidden;flex:1;min-width:0;">'
+                        f'<div style="font-size:13px;font-weight:600;color:#1D1D1F;white-space:nowrap;'
+                        f'overflow:hidden;text-overflow:ellipsis;">{sel["name"]}</div>'
+                        f'<span style="font-size:8px;color:#86868b;letter-spacing:1px;">{sel_stars_str}</span>'
+                        f'</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                    if st.button("Change app", key="change_app_btn", type="secondary", use_container_width=True):
+                        st.session_state.selected_app = None
+                        st.rerun()
+                else:
+                    scroll_container = st.container(height=340)
+                    with scroll_container:
+                        for i, r in enumerate(results):
+                            stars_val = round(r.get("rating", 0))
+                            stars_str = "★" * stars_val + "☆" * (5 - stars_val) if stars_val else ""
+                            icon_url = r.get("icon", "")
+                            icol, bcol = st.columns([0.18, 0.82], vertical_alignment="center")
+                            with icol:
+                                if icon_url:
+                                    st.markdown(
+                                        f'<img src="{icon_url}" style="width:28px;height:28px;border-radius:7px;">',
+                                        unsafe_allow_html=True,
+                                    )
+                            with bcol:
+                                if st.button(r['name'], key=f"pick_{i}", use_container_width=True, type="secondary"):
+                                    st.session_state.selected_app = r
+                                    st.rerun()
                                 st.markdown(
-                                    f'<img src="{icon_url}" style="width:28px;height:28px;border-radius:7px;">',
+                                    f'<p style="font-size:8px;color:#86868b;margin:-10px 0 4px 0;letter-spacing:1px;'
+                                    f'padding-left:14px;">{stars_str}</p>',
                                     unsafe_allow_html=True,
                                 )
-                        with bcol:
-                            label = f"{check}{r['name']}"
-                            if st.button(label, key=f"pick_{i}", use_container_width=True, type="secondary"):
-                                st.session_state.selected_app = r
-                                st.rerun()
-                            st.markdown(
-                                f'<p style="font-size:8px;color:#86868b;margin:-10px 0 4px 0;letter-spacing:1px;'
-                                f'padding-left:14px;">{stars_str}</p>',
-                                unsafe_allow_html=True,
-                            )
             else:
                 st.caption("No apps found.")
                 st.session_state.selected_app = None
