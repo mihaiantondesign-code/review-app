@@ -140,6 +140,18 @@ button[data-testid="stBaseButton-secondary"]:hover {{
     color: var(--text-primary) !important;
 }}
 
+/* ── Sidebar app list buttons ── */
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] button[data-testid="stBaseButton-secondary"] {{
+    font-size: 13px !important;
+    padding: 6px 10px !important;
+    text-align: left !important;
+    border-radius: 8px !important;
+    line-height: 1.3 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}}
+
 /* ── Metrics ── */
 [data-testid="stMetric"] {{
     background: var(--bg-tertiary) !important;
@@ -1213,18 +1225,23 @@ with st.sidebar:
                         stars_str = "★" * stars_val + "☆" * (5 - stars_val) if stars_val else ""
                         icon_url = r.get("icon", "")
                         check = "✓ " if is_sel else ""
-                        icol, bcol = st.columns([0.15, 0.85], vertical_alignment="center")
+                        icol, bcol = st.columns([0.18, 0.82], vertical_alignment="center")
                         with icol:
                             if icon_url:
                                 st.markdown(
-                                    f'<img src="{icon_url}" style="width:32px;height:32px;border-radius:8px;">',
+                                    f'<img src="{icon_url}" style="width:28px;height:28px;border-radius:7px;">',
                                     unsafe_allow_html=True,
                                 )
                         with bcol:
-                            label = f"{check}{r['name']}  {stars_str}"
+                            label = f"{check}{r['name']}"
                             if st.button(label, key=f"pick_{i}", use_container_width=True, type="secondary"):
                                 st.session_state.selected_app = r
                                 st.rerun()
+                            st.markdown(
+                                f'<p style="font-size:8px;color:#86868b;margin:-10px 0 4px 0;letter-spacing:1px;'
+                                f'padding-left:14px;">{stars_str}</p>',
+                                unsafe_allow_html=True,
+                            )
             else:
                 st.caption("No apps found.")
                 st.session_state.selected_app = None
