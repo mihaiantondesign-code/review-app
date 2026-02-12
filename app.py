@@ -83,6 +83,31 @@ section[data-testid="stSidebar"] {{
     border-right: 1px solid var(--border) !important;
 }}
 
+/* ── Sidebar collapse/expand button — custom icon ── */
+button[data-testid="stSidebarCollapseButton"],
+button[data-testid="collapsedControl"] {{
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGYAAABmCAYAAAA53+RiAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMVSURBVHgB7d09b1JhGMbxy5cPoFO7eWy7t6Mj36B2c2jj8RtoColb6w4RP4EE2HVUJliYC5MmvBw32Bjd9LnPc4gda7kPuUKuX3IHOtgc8j8vuPQGRERERERERERERESYPAnzNsyXMPMwf3Zk5sVnSlGiByjHyzCfEeNkYfphfoHDaZgTe7O3t4fj4+P89a6m0ylmsxkWi4X9mIX5EKYFZ4/h7yPildJHPOg+eNixnViM8/PzPMp9jUYjNBqNJASyE/AZ4md18wi+rsK8RzzIN4hnFIv82C4uLlCtVrG/v49N2L8/OzvL34/H4wri3eE7nHiGScM0EaNcg0sapmlRbDytr7oQ50V4GYX5AQeez5h58focfObhDE/a7TbKUqvV7Pa2Qvz8K2zoIXykYRLE2xebNExyeXmJMtkzC/F2lsKBVxj7ppOB60G/dmrPg00e9Hdx69tdBQ68wiSI91dGyeHhIbahiO9yBniFsf8X3IDTycHBAbahuGISOPAKI84UhpTCkFIYUgpDSmFIKQwphSGlMKQUhpTCkFIYUgpDSmFIKQwphSGlMKQUhpTCkFIYUgpDSmFIKQwphSGlMKQUhpTCkFIYUgpDSmFIKQwphSGlMKQUhpTCkFIYUgpDSmFIKQwphSGlMKQUhpTCkFIYUgpDSmFIKQwphSGlMKQUhpTCkFIYUgpDSmFIeYXJEDdCMMqWyyW2wdaXwOnPHHuFsYOpgNONrRTZhslkYi8ue3K8wgwQ/xB0BXwGdsWUHcd+f3FlfoUDrzAtxA0QV+DTCrPqdrsoU71et5cMTtuXvPbH/A7zE3GpjxmAR35s4Wx+ZT+UsXyh0+lgOBza23dwesZ4LvaxhTZPwRknP7Zi+Y5rHItig7jQqAkn3quwviEuC7pG3KNiN/YMHPJjs7VVvV4PtiFjk3VYxY4y2O8KPuHfCemirK1+KeLzJkEMY5c3yxqT1yg2Vtj2iqOjI/zPtoz1F4niQW/PVVtm5PLAv62sMGsp4tKfBMWKwx2QIZ5odqtuwWHtlYiIiIiIiIiIiIiI7LS/zQHimnjRPWgAAAAASUVORK5CYII=') no-repeat center center !important;
+    background-size: 20px 20px !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    border-radius: 8px !important;
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+}}
+button[data-testid="stSidebarCollapseButton"] svg,
+button[data-testid="collapsedControl"] svg {{
+    display: none !important;
+}}
+button[data-testid="stSidebarCollapseButton"]:hover,
+button[data-testid="collapsedControl"]:hover {{
+    background-color: rgba(0,0,0,0.06) !important;
+}}
+button[data-testid="collapsedControl"] {{
+    transform: rotate(180deg) !important;
+}}
+
 section[data-testid="stSidebar"] .stMarkdown h2 {{
     font-size: 11px !important;
     font-weight: 600 !important;
@@ -1193,8 +1218,6 @@ def render_empty_state(icon, title, description):
 
 # ─── SIDEBAR ───
 with st.sidebar:
-    st.image("static/logo.png", width=120)
-
     st.markdown("## App Store")
     country_code = st.text_input("Country", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
 
