@@ -91,12 +91,12 @@ section[data-testid="stSidebar"] .stMarkdown h2 {{
 .stButton > button[kind="primary"],
 .stDownloadButton > button[kind="primary"],
 button[data-testid="stBaseButton-primary"] {{
-    background-color: var(--primary) !important;
-    color: white !important;
+    background-color: rgba(0,0,0,0.06) !important;
+    color: #1D1D1F !important;
     border: none !important;
     border-radius: 980px !important;
     font-family: 'Inter', -apple-system, sans-serif !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     font-size: 14px !important;
     padding: 10px 24px !important;
     transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
@@ -106,9 +106,8 @@ button[data-testid="stBaseButton-primary"] {{
 .stButton > button[kind="primary"]:hover,
 .stDownloadButton > button[kind="primary"]:hover,
 button[data-testid="stBaseButton-primary"]:hover {{
-    background-color: #1D1D1F !important;
-    transform: scale(1.02);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+    background-color: rgba(0,0,0,0.10) !important;
+    box-shadow: none !important;
 }}
 
 /* ── Secondary / segment buttons ── */
