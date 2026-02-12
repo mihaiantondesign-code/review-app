@@ -1185,62 +1185,36 @@ with st.sidebar:
     if "selected_app" not in st.session_state:
         st.session_state.selected_app = None
 
-    if "search_results" not in st.session_state:
-        st.session_state.search_results = []
-
     if search_query.strip():
         if search_query.strip().isdigit():
             st.session_state.selected_app = {"id": search_query.strip(), "name": f"App {search_query.strip()}", "developer": "", "icon": "", "rating": 0, "ratings_count": 0}
-            st.session_state.search_results = []
         else:
             results = search_apps(search_query.strip(), country=country_code.strip() or "us", limit=8)
-            st.session_state.search_results = results
-            if results and not st.session_state.selected_app:
-                st.session_state.selected_app = results[0]
-            elif not results:
-                st.caption("No apps found. Try a different search term.")
+            if results:
+                names = [r["name"] for r in results]
+                current_sel = st.session_state.selected_app
+                default_idx = 0
+                if current_sel:
+                    for j, r in enumerate(results):
+                        if r["id"] == current_sel.get("id"):
+                            default_idx = j
+                            break
+                picked = st.radio(
+                    "Results",
+                    options=names,
+                    index=default_idx,
+                    key="app_radio",
+                    label_visibility="collapsed",
+                )
+                for r in results:
+                    if r["name"] == picked:
+                        st.session_state.selected_app = r
+                        break
+            else:
+                st.caption("No apps found.")
                 st.session_state.selected_app = None
     else:
         st.session_state.selected_app = None
-        st.session_state.search_results = []
-
-    if st.session_state.search_results and not search_query.strip().isdigit():
-        results = st.session_state.search_results
-        for i, r in enumerate(results):
-            is_selected = st.session_state.selected_app and st.session_state.selected_app.get("id") == r["id"]
-            icon_src = f'<img src="{r["icon"]}" style="width:28px;height:28px;border-radius:7px;flex-shrink:0;">' if r.get("icon") else ""
-            bg = "rgba(0,0,0,0.05)" if is_selected else "transparent"
-            border = "2px solid rgba(0,0,0,0.12)" if is_selected else "1px solid rgba(0,0,0,0.04)"
-            st.markdown(
-                f'<div style="background:{bg};border:{border};border-radius:10px;padding:6px 10px;margin:3px 0;display:flex;align-items:center;gap:8px;cursor:pointer;">'
-                f'{icon_src}'
-                f'<div style="flex:1;min-width:0;overflow:hidden;">'
-                f'<div style="font-weight:600;font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{r["name"]}</div>'
-                f'<div style="font-size:10px;color:var(--text-secondary);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{r["developer"]}</div>'
-                f'</div></div>',
-                unsafe_allow_html=True,
-            )
-            if not is_selected:
-                if st.button("Select", key=f"pick_{r['id']}_{i}", use_container_width=True):
-                    st.session_state.selected_app = r
-                    st.rerun()
-
-    if st.session_state.selected_app and st.session_state.selected_app.get("name"):
-        sel = st.session_state.selected_app
-        icon_html = f'<img src="{sel["icon"]}" style="width:32px;height:32px;border-radius:8px;margin-right:10px;vertical-align:middle;">' if sel.get("icon") else ""
-        rating_stars = round(sel.get("rating", 0))
-        rating_count = sel.get("ratings_count", 0)
-        rating_str = f"{'★' * rating_stars}{'☆' * (5 - rating_stars)} {rating_count:,}" if rating_count else ""
-        st.markdown(
-            f'<div style="background:var(--secondary-bg);border-radius:12px;padding:10px 14px;margin:8px 0 4px 0;display:flex;align-items:center;gap:8px;">'
-            f'{icon_html}'
-            f'<div style="flex:1;min-width:0;">'
-            f'<div style="font-weight:600;font-size:13px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{sel["name"]}</div>'
-            f'<div style="font-size:11px;color:var(--text-secondary);line-height:1.3;">{sel.get("developer","")}</div>'
-            f'{"<div style=font-size:11px;color:var(--text-secondary);line-height:1.3;>" + rating_str + "</div>" if rating_str else ""}'
-            f'</div></div>',
-            unsafe_allow_html=True,
-        )
 
     app_id = st.session_state.selected_app["id"] if st.session_state.selected_app else ""
 
