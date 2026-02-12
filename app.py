@@ -43,6 +43,22 @@ st.markdown(f"""
     --shadow-lg: 0 4px 16px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.04);
 }}
 
+/* Dark scrollbar for st.container(height=...) inside sidebar expander */
+[data-testid="stVerticalBlockBorderWrapper"] > div[style*="overflow"] {{
+    scrollbar-width: thin !important;
+    scrollbar-color: #1D1D1F transparent !important;
+}}
+[data-testid="stVerticalBlockBorderWrapper"] > div[style*="overflow"]::-webkit-scrollbar {{
+    width: 5px !important;
+}}
+[data-testid="stVerticalBlockBorderWrapper"] > div[style*="overflow"]::-webkit-scrollbar-thumb {{
+    background: #1D1D1F !important;
+    border-radius: 4px !important;
+}}
+[data-testid="stVerticalBlockBorderWrapper"] > div[style*="overflow"]::-webkit-scrollbar-track {{
+    background: transparent !important;
+}}
+
 html, body, [class*="css"] {{
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif !important;
     -webkit-font-smoothing: antialiased;
@@ -1189,27 +1205,48 @@ with st.sidebar:
         if search_query.strip().isdigit():
             st.session_state.selected_app = {"id": search_query.strip(), "name": f"App {search_query.strip()}", "developer": "", "icon": "", "rating": 0, "ratings_count": 0}
         else:
-            results = search_apps(search_query.strip(), country=country_code.strip() or "us", limit=8)
+            results = search_apps(search_query.strip(), country=country_code.strip() or "us", limit=10)
             if results:
-                names = [r["name"] for r in results]
-                current_sel = st.session_state.selected_app
-                default_idx = 0
-                if current_sel:
-                    for j, r in enumerate(results):
-                        if r["id"] == current_sel.get("id"):
-                            default_idx = j
-                            break
-                picked = st.radio(
-                    "Results",
-                    options=names,
-                    index=default_idx,
-                    key="app_radio",
-                    label_visibility="collapsed",
-                )
+                sel_id = st.session_state.selected_app["id"] if st.session_state.selected_app else None
+                if sel_id is None:
+                    st.session_state.selected_app = results[0]
+                    sel_id = results[0]["id"]
+
+                sel_name = ""
                 for r in results:
-                    if r["name"] == picked:
-                        st.session_state.selected_app = r
+                    if r["id"] == sel_id:
+                        sel_name = r["name"]
                         break
+                if not sel_name:
+                    st.session_state.selected_app = results[0]
+                    sel_id = results[0]["id"]
+                    sel_name = results[0]["name"]
+
+                with st.expander(f"▸  {sel_name}", expanded=False):
+                    scroll_container = st.container(height=308)
+                    with scroll_container:
+                        for i, r in enumerate(results):
+                            is_sel = r["id"] == sel_id
+                            stars_val = round(r.get("rating", 0))
+                            stars_str = "★" * stars_val + "☆" * (5 - stars_val) if stars_val else ""
+                            icon_img = f'<img src="{r["icon"]}" style="width:28px;height:28px;border-radius:7px;flex-shrink:0;">' if r.get("icon") else ""
+                            bg = "rgba(0,0,0,0.06)" if is_sel else "transparent"
+                            fw = "700" if is_sel else "500"
+                            check = "✓ " if is_sel else ""
+                            st.markdown(
+                                f'<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;'
+                                f'background:{bg};border-radius:8px;margin-bottom:2px;">'
+                                f'{icon_img}'
+                                f'<div style="flex:1;min-width:0;overflow:hidden;">'
+                                f'<div style="font-size:12px;font-weight:{fw};line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{check}{r["name"]}</div>'
+                                f'<div style="font-size:10px;color:#86868b;line-height:1.2;">{stars_str}</div>'
+                                f'</div></div>',
+                                unsafe_allow_html=True,
+                            )
+                            if not is_sel:
+                                if st.button("Select", key=f"pick_{i}", use_container_width=True):
+                                    st.session_state.selected_app = r
+                                    st.rerun()
             else:
                 st.caption("No apps found.")
                 st.session_state.selected_app = None
