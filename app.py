@@ -1205,101 +1205,46 @@ with st.sidebar:
     if "selected_app" not in st.session_state:
         st.session_state.selected_app = None
 
-    if "dropdown_open" not in st.session_state:
-        st.session_state.dropdown_open = False
     if "last_search" not in st.session_state:
         st.session_state.last_search = ""
 
     if search_query.strip():
         if search_query.strip() != st.session_state.last_search:
             st.session_state.last_search = search_query.strip()
-            st.session_state.dropdown_open = True
             st.session_state.selected_app = None
 
         if search_query.strip().isdigit():
             st.session_state.selected_app = {"id": search_query.strip(), "name": f"App {search_query.strip()}", "developer": "", "icon": "", "rating": 0, "ratings_count": 0}
-            st.session_state.dropdown_open = False
         else:
             results = search_apps(search_query.strip(), country=country_code.strip() or "us", limit=10)
             if results:
                 sel = st.session_state.selected_app
-                sel_name = sel["name"] if sel else "Select an app..."
-
-                arrow = "▾" if st.session_state.dropdown_open else "▸"
-                sel_icon = sel.get("icon", "") if sel else ""
-                icon_html = f'<img src="{sel_icon}" style="width:24px;height:24px;border-radius:6px;flex-shrink:0;">' if sel_icon else ""
-                st.markdown(
-                    f'<div class="app-toggle-row">'
-                    f'<div style="display:flex;align-items:center;gap:8px;overflow:hidden;">'
-                    f'{icon_html}'
-                    f'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{sel_name}</span>'
-                    f'</div>'
-                    f'<span style="flex-shrink:0;font-size:12px;color:#86868b;">{arrow}</span>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-                if st.button("toggle_btn", key="dropdown_toggle", use_container_width=True, type="secondary",
-                             help="Open/close app list"):
-                    st.session_state.dropdown_open = not st.session_state.dropdown_open
-                    st.rerun()
-                st.markdown(
-                    '<style>'
-                    '.app-toggle-row{background:rgba(0,0,0,0.04);border-radius:10px;padding:8px 12px;'
-                    'display:flex;align-items:center;justify-content:space-between;cursor:pointer;'
-                    'font-size:13px;font-weight:600;color:#1D1D1F;font-family:Inter,-apple-system,sans-serif;}'
-                    '.app-toggle-row+div button{position:absolute !important;opacity:0 !important;'
-                    'height:42px !important;margin-top:-46px !important;z-index:10 !important;'
-                    'cursor:pointer !important;}'
-                    '</style>',
-                    unsafe_allow_html=True,
-                )
-
-                if st.session_state.dropdown_open:
-                    scroll_container = st.container(height=340)
-                    with scroll_container:
-                        for i, r in enumerate(results):
-                            is_sel = sel and sel.get("id") == r["id"]
-                            stars_val = round(r.get("rating", 0))
-                            stars_str = "★" * stars_val + "☆" * (5 - stars_val) if stars_val else ""
-                            check_icon = "✓" if is_sel else ""
-                            icon_url = r.get("icon", "")
-                            row_bg = "rgba(0,0,0,0.05)" if is_sel else "transparent"
-                            st.markdown(
-                                f'<div class="app-list-item" data-idx="{i}" style="background:{row_bg};">'
-                                f'<div style="display:flex;align-items:center;gap:8px;overflow:hidden;flex:1;">'
-                                f'<img src="{icon_url}" style="width:32px;height:32px;border-radius:8px;flex-shrink:0;">'
-                                f'<div style="overflow:hidden;">'
-                                f'<div style="font-size:13px;font-weight:600;color:#1D1D1F;white-space:nowrap;'
-                                f'overflow:hidden;text-overflow:ellipsis;">{r["name"]}</div>'
-                                f'<div style="font-size:11px;color:#86868b;">{stars_str}</div>'
-                                f'</div>'
-                                f'</div>'
-                                f'<span style="font-size:12px;color:#34C759;flex-shrink:0;">{check_icon}</span>'
-                                f'</div>',
-                                unsafe_allow_html=True,
-                            )
-                            if st.button(f"sel_{i}", key=f"pick_{i}", use_container_width=True, type="secondary"):
+                scroll_container = st.container(height=340)
+                with scroll_container:
+                    for i, r in enumerate(results):
+                        is_sel = sel and sel.get("id") == r["id"]
+                        stars_val = round(r.get("rating", 0))
+                        stars_str = "★" * stars_val + "☆" * (5 - stars_val) if stars_val else ""
+                        icon_url = r.get("icon", "")
+                        check = "✓ " if is_sel else ""
+                        icol, bcol = st.columns([0.15, 0.85], vertical_alignment="center")
+                        with icol:
+                            if icon_url:
+                                st.markdown(
+                                    f'<img src="{icon_url}" style="width:32px;height:32px;border-radius:8px;">',
+                                    unsafe_allow_html=True,
+                                )
+                        with bcol:
+                            label = f"{check}{r['name']}  {stars_str}"
+                            if st.button(label, key=f"pick_{i}", use_container_width=True, type="secondary"):
                                 st.session_state.selected_app = r
-                                st.session_state.dropdown_open = False
                                 st.rerun()
-                    st.markdown(
-                        '<style>'
-                        '.app-list-item{display:flex;align-items:center;justify-content:space-between;'
-                        'padding:8px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;'
-                        'font-family:Inter,-apple-system,sans-serif;}'
-                        '.app-list-item+div button{position:absolute !important;opacity:0 !important;'
-                        'height:50px !important;margin-top:-54px !important;z-index:10 !important;'
-                        'cursor:pointer !important;width:100% !important;}'
-                        '</style>',
-                        unsafe_allow_html=True,
-                    )
             else:
                 st.caption("No apps found.")
                 st.session_state.selected_app = None
     else:
         st.session_state.selected_app = None
         st.session_state.last_search = ""
-        st.session_state.dropdown_open = False
 
     app_id = st.session_state.selected_app["id"] if st.session_state.selected_app else ""
 
