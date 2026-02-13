@@ -83,7 +83,12 @@ section[data-testid="stSidebar"] {{
     border-right: 1px solid var(--border) !important;
 }}
 
-
+/* ── Hide sidebar collapse button ── */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"] {{
+    display: none !important;
+}}
 
 section[data-testid="stSidebar"] .stMarkdown h2 {{
     font-size: 11px !important;
