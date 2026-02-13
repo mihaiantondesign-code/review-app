@@ -83,7 +83,7 @@ section[data-testid="stSidebar"] {{
     border-right: 1px solid var(--border) !important;
 }}
 
-/* ── Sidebar collapse/expand button — custom icon ── */
+/* ── Sidebar collapse/expand button — hide default icon ── */
 button[data-testid="stSidebarCollapseButton"],
 button[data-testid="collapsedControl"] {{
     border: none !important;
@@ -92,19 +92,13 @@ button[data-testid="collapsedControl"] {{
     height: 32px !important;
     min-width: 32px !important;
     border-radius: 8px !important;
-    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+    transition: background-color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
     background: transparent !important;
+    position: relative !important;
 }}
 button[data-testid="stSidebarCollapseButton"] span,
 button[data-testid="collapsedControl"] span {{
-    font-size: 0 !important;
-    color: transparent !important;
-    display: block !important;
-    width: 24px !important;
-    height: 24px !important;
-    background: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 3H13C16.7712 3 18.6569 3 19.8284 4.17157C21 5.34315 21 7.22876 21 11V13C21 16.7712 21 18.6569 19.8284 19.8284C18.6569 21 16.7712 21 13 21H11C7.22876 21 5.34315 21 4.17157 19.8284C3 18.6569 3 16.7712 3 13V11C3 7.22876 3 5.34315 4.17157 4.17157C5.34315 3 7.22876 3 11 3Z' stroke='%23141B34' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 8V16' stroke='%23141B34' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center center !important;
-    background-size: 20px 20px !important;
-    overflow: hidden !important;
+    visibility: hidden !important;
 }}
 button[data-testid="stSidebarCollapseButton"] svg,
 button[data-testid="collapsedControl"] svg {{
@@ -114,8 +108,22 @@ button[data-testid="stSidebarCollapseButton"]:hover,
 button[data-testid="collapsedControl"]:hover {{
     background-color: rgba(0,0,0,0.06) !important;
 }}
-button[data-testid="collapsedControl"] {{
-    transform: rotate(180deg) !important;
+/* ── Custom sidebar icon overlay ── */
+.sidebar-icon-overlay {{
+    position: fixed;
+    top: 8px;
+    left: 12px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 999999;
+}}
+.sidebar-icon-overlay svg {{
+    width: 20px;
+    height: 20px;
 }}
 
 section[data-testid="stSidebar"] .stMarkdown h2 {{
@@ -1228,6 +1236,14 @@ def render_empty_state(icon, title, description):
 
 # ─── SIDEBAR ───
 with st.sidebar:
+    st.markdown("""
+    <div class="sidebar-icon-overlay">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 3H13C16.7712 3 18.6569 3 19.8284 4.17157C21 5.34315 21 7.22876 21 11V13C21 16.7712 21 18.6569 19.8284 19.8284C18.6569 21 16.7712 21 13 21H11C7.22876 21 5.34315 21 4.17157 19.8284C3 18.6569 3 16.7712 3 13V11C3 7.22876 3 5.34315 4.17157 4.17157C5.34315 3 7.22876 3 11 3Z" stroke="#141B34" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 8V16" stroke="#141B34" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown("## App Store")
     country_code = st.text_input("Country", value="it", help="Two-letter country code (e.g. 'it' for Italy, 'us' for USA)")
 
