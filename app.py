@@ -99,9 +99,18 @@ button[data-testid="collapsedControl"] {{
     color: transparent !important;
     overflow: hidden !important;
 }}
-button[data-testid="stSidebarCollapseButton"] *,
-button[data-testid="collapsedControl"] * {{
+button[data-testid="stSidebarCollapseButton"] svg,
+button[data-testid="collapsedControl"] svg {{
     display: none !important;
+}}
+button[data-testid="stSidebarCollapseButton"] span,
+button[data-testid="collapsedControl"] span {{
+    visibility: hidden !important;
+    font-size: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
 }}
 button[data-testid="stSidebarCollapseButton"]:hover,
 button[data-testid="collapsedControl"]:hover {{
@@ -109,17 +118,6 @@ button[data-testid="collapsedControl"]:hover {{
 }}
 button[data-testid="collapsedControl"] {{
     transform: rotate(180deg) !important;
-}}
-button[data-testid="stSidebarCollapseButton"][title],
-button[data-testid="collapsedControl"][title] {{
-    title: none !important;
-}}
-button[data-testid="stSidebarCollapseButton"]::after,
-button[data-testid="collapsedControl"]::after,
-button[data-testid="stSidebarCollapseButton"]::before,
-button[data-testid="collapsedControl"]::before {{
-    display: none !important;
-    content: none !important;
 }}
 
 section[data-testid="stSidebar"] .stMarkdown h2 {{
