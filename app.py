@@ -83,21 +83,14 @@ section[data-testid="stSidebar"] {{
     border-right: 1px solid var(--border) !important;
 }}
 
-/* ── Hide default sidebar collapse/expand button content ── */
+/* ── Sidebar collapse/expand button — invisible but clickable ── */
 [data-testid="stSidebarCollapseButton"],
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapsedControl"] {{
-    font-size: 0 !important;
-    color: transparent !important;
-    -webkit-text-fill-color: transparent !important;
-    overflow: hidden !important;
-    width: 0 !important;
-    height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
     opacity: 0 !important;
-    position: absolute !important;
+    border: none !important;
+    cursor: pointer !important;
+    z-index: 200 !important;
 }}
 
 section[data-testid="stSidebar"] .stMarkdown h2 {{
