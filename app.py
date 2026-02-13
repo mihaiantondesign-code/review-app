@@ -83,14 +83,11 @@ section[data-testid="stSidebar"] {{
     border-right: 1px solid var(--border) !important;
 }}
 
-/* ── Sidebar collapse/expand button — invisible but clickable ── */
+/* ── Hide sidebar collapse/expand button completely ── */
 [data-testid="stSidebarCollapseButton"],
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapsedControl"] {{
-    opacity: 0 !important;
-    border: none !important;
-    cursor: pointer !important;
-    z-index: 200 !important;
+    display: none !important;
 }}
 
 section[data-testid="stSidebar"] .stMarkdown h2 {{
