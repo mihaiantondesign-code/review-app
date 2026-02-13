@@ -1,0 +1,29 @@
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.routers import apps, reviews, analysis, export
+
+app = FastAPI(title="App Store Reviewer API", version="1.0.0")
+
+allowed_origins = os.environ.get(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:3001",
+).split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(apps.router)
+app.include_router(reviews.router)
+app.include_router(analysis.router)
+app.include_router(export.router)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
