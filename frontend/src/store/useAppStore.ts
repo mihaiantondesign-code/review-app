@@ -20,8 +20,10 @@ interface AppState {
   activeSection: ActiveSection;
   setActiveSection: (s: ActiveSection) => void;
 
+  selectedApps: AppSearchResult[];
+  setSelectedApps: (apps: AppSearchResult[]) => void;
+  // computed alias — keeps downstream code (fetch hook, ComparisonSection) intact
   selectedApp: AppSearchResult | null;
-  setSelectedApp: (app: AppSearchResult | null) => void;
 
   reviews: Review[];
   setReviews: (r: Review[]) => void;
@@ -66,8 +68,9 @@ export const useAppStore = create<AppState>((set) => ({
   activeSection: "appstore",
   setActiveSection: (s) => set({ activeSection: s }),
 
+  selectedApps: [],
+  setSelectedApps: (apps) => set({ selectedApps: apps, selectedApp: apps[0] ?? null }),
   selectedApp: null,
-  setSelectedApp: (app) => set({ selectedApp: app }),
 
   reviews: [],
   setReviews: (r) => set({ reviews: r }),

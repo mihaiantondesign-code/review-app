@@ -11,13 +11,15 @@ export function useFetchReviews() {
   const cancelledRef = useRef(false);
 
   const {
-    selectedApp,
+    selectedApps,
     countryCode,
     setReviews,
     setFetchDone,
     setFetchProgress,
     setIsFetching,
   } = useAppStore();
+
+  const selectedApp = selectedApps[0] ?? null;
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) clearTimeout(pollRef.current);
@@ -89,7 +91,7 @@ export function useFetchReviews() {
 
       pollRef.current = setTimeout(poll, POLL_INTERVAL);
     },
-    [selectedApp, countryCode, setReviews, setFetchDone, setFetchProgress, setIsFetching, finish, stopPolling]
+    [selectedApps, countryCode, setReviews, setFetchDone, setFetchProgress, setIsFetching, finish, stopPolling]
   );
 
   const cancel = useCallback(() => {

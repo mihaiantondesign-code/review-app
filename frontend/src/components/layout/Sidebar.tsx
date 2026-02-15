@@ -1,17 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { searchApps } from "@/lib/api";
-import { AppSearchResults } from "@/components/shared/AppSearchResults";
-import { AppCard } from "@/components/shared/AppCard";
+import { AppMultiSelectPicker } from "@/components/shared/AppMultiSelectPicker";
 import { useFetchReviews } from "@/hooks/useFetchReviews";
-import type { AppSearchResult } from "@/types";
 
 export function Sidebar() {
   const {
-    selectedApp,
-    setSelectedApp,
+    selectedApps,
+    setSelectedApps,
     countryCode,
     setCountryCode,
     fetchMode,
@@ -21,58 +18,21 @@ export function Sidebar() {
 
   const { fetch: fetchReviews } = useFetchReviews();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<AppSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [months, setMonths] = useState(12);
   const [maxPages, setMaxPages] = useState(10);
-
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    if (searchQuery.trim().match(/^\d+$/)) {
-      setSelectedApp({
-        id: searchQuery.trim(),
-        name: `App ${searchQuery.trim()}`,
-        developer: "",
-        icon: "",
-        bundle: "",
-        price: "Free",
-        rating: 0,
-        ratings_count: 0,
-      });
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const results = await searchApps(searchQuery.trim(), countryCode || "us");
-        setSearchResults(results);
-      } catch {
-        setSearchResults([]);
-      }
-      setIsSearching(false);
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, countryCode, setSelectedApp]);
 
   const MAX_FAST_PAGES = 10;
 
   const handleFetch = useCallback(() => {
-    if (!selectedApp) return;
+    if (selectedApps.length === 0) return;
     const cutoffDays = fetchMode === "time" ? months * 30 : 365 * 10;
     const pages = fetchMode === "pages" ? maxPages : MAX_FAST_PAGES;
     fetchReviews(pages, cutoffDays);
-  }, [selectedApp, fetchMode, months, maxPages, fetchReviews]);
+  }, [selectedApps, fetchMode, months, maxPages, fetchReviews]);
 
   return (
     <aside className="w-[300px] shrink-0 bg-bg-secondary border-r border-border h-screen overflow-y-auto">
-      {/* App Search — primary section, gets more visual weight */}
+      {/* App Search */}
       <div className="px-5 pt-6 pb-4">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-4">
           App Store
@@ -90,54 +50,27 @@ export function Sidebar() {
         />
 
         <label className="block text-[13px] font-medium text-text-primary mb-1.5 mt-4">
-          Search App
+          Source
         </label>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            if (!e.target.value.trim()) setSelectedApp(null);
-          }}
-          className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
-          placeholder="e.g. WhatsApp, Instagram..."
+        <AppMultiSelectPicker
+          selected={selectedApps}
+          onChange={setSelectedApps}
+          country={countryCode}
+          placeholder="Select app"
         />
 
-        {selectedApp ? (
-          <div className="mt-3">
-            <AppCard app={selectedApp} selected />
-            <button
-              onClick={() => {
-                setSelectedApp(null);
-                setSearchQuery("");
-              }}
-              className="mt-2 w-full py-2 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.98] rounded-pill transition-all duration-150"
-            >
-              Change app
-            </button>
-          </div>
-        ) : (
-          searchQuery.trim() && (
-            <div className="mt-3">
-              {isSearching ? (
-                <p className="text-xs text-text-tertiary py-2">Searching...</p>
-              ) : (
-                <AppSearchResults
-                  results={searchResults}
-                  onSelect={(app) => {
-                    setSelectedApp(app);
-                    setSearchQuery(app.name);
-                  }}
-                />
-              )}
-            </div>
-          )
+        {selectedApps.length > 0 && (
+          <p className="mt-2 text-[11px] text-text-tertiary">
+            {selectedApps.length === 1
+              ? `1 app selected`
+              : `${selectedApps.length} apps selected — fetching from first`}
+          </p>
         )}
       </div>
 
       <div className="mx-5 border-t border-border" />
 
-      {/* Fetch controls — secondary section, less weight */}
+      {/* Fetch controls */}
       <div className="px-5 py-4">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-3">
           Fetch Mode
@@ -208,7 +141,7 @@ export function Sidebar() {
 
         <button
           onClick={handleFetch}
-          disabled={!selectedApp || isFetching}
+          disabled={selectedApps.length === 0 || isFetching}
           className="w-full py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97] disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:shadow-none"
         >
           {isFetching ? "Fetching..." : "Fetch Reviews"}
