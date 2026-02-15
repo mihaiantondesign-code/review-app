@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { useAppSearch } from "@/hooks/useAppSearch";
 import { useCompare } from "@/hooks/useCompare";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { MetricCard } from "@/components/shared/MetricCard";
 import { ProgressOverlay } from "@/components/shared/ProgressOverlay";
 import { AppCard } from "@/components/shared/AppCard";
-import { AppSearchResults } from "@/components/shared/AppSearchResults";
+import { AppMultiSelectPicker } from "@/components/shared/AppMultiSelectPicker";
 import { exportComparisonExcel, analyzeSentiment, analyzeAdjustedMetrics, analyzeThemes } from "@/lib/api";
 import { downloadBlob } from "@/lib/utils";
 import {
@@ -44,75 +43,50 @@ function CompAppSlot({
   canRemove: boolean;
   country: string;
 }) {
-  const [search, setSearch] = useState("");
-  const { results, isSearching } = useAppSearch(search, country);
-
-  if (app) {
-    return (
-      <div className="rounded-md p-3 bg-bg-tertiary" style={{ boxShadow: "var(--shadow-sm)" }}>
-        <AppCard app={app} selected />
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={onClear}
-            className="flex-1 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.98] rounded-pill transition-all duration-150"
-          >
-            Change
-          </button>
-          {canRemove && (
-            <button
-              onClick={onRemove}
-              className="flex-1 py-1.5 text-xs font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
-            >
-              Remove
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-md p-3 bg-bg-tertiary" style={{ boxShadow: "var(--shadow-sm)" }}>
       <label className="block text-[13px] font-medium text-text-primary mb-1.5">
         App {index + 1}
       </label>
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          if (e.target.value.trim().match(/^\d+$/)) {
-            onSelect({
-              id: e.target.value.trim(),
-              name: `App ${e.target.value.trim()}`,
-              developer: "",
-              icon: "",
-              bundle: "",
-              price: "Free",
-              rating: 0,
-              ratings_count: 0,
-            });
-          }
-        }}
-        placeholder="Search app name..."
-        className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
-      />
-      {search.trim() && !search.trim().match(/^\d+$/) && (
-        <div className="mt-2">
-          {isSearching ? (
-            <p className="text-xs text-text-secondary">Searching...</p>
-          ) : (
-            <AppSearchResults results={results} onSelect={onSelect} />
+
+      {app ? (
+        <>
+          <AppCard app={app} selected />
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={onClear}
+              className="flex-1 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.98] rounded-pill transition-all duration-150"
+            >
+              Change
+            </button>
+            {canRemove && (
+              <button
+                onClick={onRemove}
+                className="flex-1 py-1.5 text-xs font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <AppMultiSelectPicker
+            selected={[]}
+            onChange={(apps) => apps[0] && onSelect(apps[0])}
+            country={country}
+            max={1}
+            placeholder="Search app name..."
+          />
+          {canRemove && (
+            <button
+              onClick={onRemove}
+              className="mt-2 w-full py-1.5 text-xs font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
+            >
+              Remove
+            </button>
           )}
-        </div>
-      )}
-      {canRemove && (
-        <button
-          onClick={onRemove}
-          className="mt-2 w-full py-1.5 text-xs font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
-        >
-          Remove
-        </button>
+        </>
       )}
     </div>
   );
