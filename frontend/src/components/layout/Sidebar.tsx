@@ -61,10 +61,12 @@ export function Sidebar() {
     return () => clearTimeout(timer);
   }, [searchQuery, countryCode, setSelectedApp]);
 
+  const MAX_FAST_PAGES = 10;
+
   const handleFetch = useCallback(() => {
     if (!selectedApp) return;
     const cutoffDays = fetchMode === "time" ? months * 30 : 365 * 10;
-    const pages = fetchMode === "pages" ? maxPages : 50;
+    const pages = fetchMode === "pages" ? maxPages : MAX_FAST_PAGES;
     fetchReviews(pages, cutoffDays);
   }, [selectedApp, fetchMode, months, maxPages, fetchReviews]);
 
@@ -179,6 +181,9 @@ export function Sidebar() {
               onChange={(e) => setMonths(Number(e.target.value))}
               className="w-full accent-text-primary"
             />
+            <p className="mt-2 text-[11px] text-text-tertiary leading-relaxed">
+              Fetches up to 10 pages (~500 reviews) within the selected time window.
+            </p>
           </div>
         ) : (
           <div className="mb-4">
@@ -193,6 +198,11 @@ export function Sidebar() {
               onChange={(e) => setMaxPages(Number(e.target.value))}
               className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
             />
+            {maxPages > 10 && (
+              <p className="mt-2 text-[11px] text-amber-600 leading-relaxed">
+                ⚠ More than 10 pages may take longer to fetch.
+              </p>
+            )}
           </div>
         )}
 
