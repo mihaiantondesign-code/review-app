@@ -15,15 +15,22 @@ interface AdjustedRatingCardProps {
 }
 
 export function AdjustedRatingCard({ metrics }: AdjustedRatingCardProps) {
+  const deltaSign = metrics.rating_delta >= 0 ? "+" : "";
+  const deltaContext =
+    metrics.rating_delta > 0
+      ? "App experience rates higher"
+      : metrics.rating_delta < 0
+        ? "App experience rates lower"
+        : "No change";
+
   return (
     <div>
       <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
-        Adjusted Rating — App Experience Only
+        Adjusted Rating
       </h3>
       <p className="text-[13px] text-text-secondary leading-relaxed mb-4">
-        Reviews about pricing, customer support, company policies, or physical
-        locations are excluded to isolate feedback specifically about the app
-        experience.
+        Excludes reviews about pricing, support, policies, and physical locations
+        to isolate app-specific feedback.
       </p>
 
       <div className="grid grid-cols-3 gap-4 mb-4">
@@ -35,22 +42,24 @@ export function AdjustedRatingCard({ metrics }: AdjustedRatingCardProps) {
         <MetricCard
           label="Adjusted Rating"
           value={`${metrics.adjusted_avg.toFixed(2)} ★`}
-          delta={`${metrics.rating_delta >= 0 ? "+" : ""}${metrics.rating_delta.toFixed(2)}`}
+          delta={`${deltaSign}${metrics.rating_delta.toFixed(2)} · ${deltaContext}`}
           help={`Based on ${metrics.adjusted_count} app-related reviews`}
+          prominent
         />
         <MetricCard
           label="Excluded Reviews"
-          value={`${metrics.excluded_count} (${metrics.excluded_pct.toFixed(0)}%)`}
-          help="Reviews classified as not about the app experience itself"
+          value={`${metrics.excluded_count}`}
+          help={`${metrics.excluded_pct.toFixed(0)}% of total reviews excluded`}
+          delta={`${metrics.excluded_pct.toFixed(0)}% of total`}
         />
       </div>
 
       {Object.keys(metrics.category_breakdown).length > 0 && (
         <div>
-          <p className="text-sm font-semibold text-text-primary mb-2">
-            Excluded reviews by category:
+          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-2">
+            Excluded by category
           </p>
-          <div className="grid grid-cols-4 gap-3">
+          <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${Math.min(Object.keys(metrics.category_breakdown).length, 4)}, 1fr)` }}>
             {Object.entries(metrics.category_breakdown)
               .sort(([, a], [, b]) => b - a)
               .map(([cat, count]) => (

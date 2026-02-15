@@ -8,15 +8,15 @@ interface StarRatingProps {
 export function StarRating({ rating, size = "md" }: StarRatingProps) {
   const full = Math.round(rating);
   const sizeClass = {
-    sm: "text-xs",
-    md: "text-sm",
-    lg: "text-lg",
+    sm: "text-[10px] tracking-[1px]",
+    md: "text-sm tracking-wider",
+    lg: "text-xl tracking-wider",
   }[size];
 
   return (
-    <span className={`${sizeClass} tracking-wider`} style={{ color: "#FFB800" }}>
+    <span className={`${sizeClass} text-star select-none`} aria-label={`${rating} out of 5 stars`}>
       {"★".repeat(full)}
-      {"☆".repeat(5 - full)}
+      <span className="opacity-25">{"★".repeat(5 - full)}</span>
     </span>
   );
 }

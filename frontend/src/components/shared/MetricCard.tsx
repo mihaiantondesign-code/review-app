@@ -5,25 +5,43 @@ interface MetricCardProps {
   value: string;
   help?: string;
   delta?: string;
+  prominent?: boolean;
 }
 
-export function MetricCard({ label, value, help, delta }: MetricCardProps) {
+export function MetricCard({ label, value, help, delta, prominent }: MetricCardProps) {
   return (
     <div
-      className="bg-bg-tertiary border border-border rounded-md p-5"
-      style={{ boxShadow: "var(--shadow-sm)" }}
-      title={help}
+      className={`rounded-md p-5 transition-colors ${
+        prominent
+          ? "bg-text-primary text-white"
+          : "bg-bg-tertiary border border-border"
+      }`}
+      style={{ boxShadow: prominent ? "var(--shadow-md)" : "var(--shadow-sm)" }}
     >
-      <div className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
+      <div className={`text-[10px] font-semibold uppercase tracking-[0.08em] mb-1.5 ${
+        prominent ? "text-white/60" : "text-text-tertiary"
+      }`}>
         {label}
+        {help && (
+          <span
+            className={`inline-flex items-center justify-center w-3.5 h-3.5 ml-1 rounded-full text-[8px] font-bold cursor-help align-middle ${
+              prominent ? "bg-white/15 text-white/70" : "bg-border-strong/30 text-text-tertiary"
+            }`}
+            title={help}
+          >
+            i
+          </span>
+        )}
       </div>
-      <div className="text-2xl font-bold text-text-primary tracking-tight">
+      <div className={`text-2xl font-bold tracking-tight ${
+        prominent ? "text-white" : "text-text-primary"
+      }`}>
         {value}
       </div>
       {delta && (
         <div
-          className={`text-sm font-medium mt-1 ${
-            delta.startsWith("+") ? "text-green-600" : delta.startsWith("-") ? "text-red-500" : "text-text-secondary"
+          className={`text-sm font-semibold mt-1 ${
+            delta.startsWith("+") ? "text-positive" : delta.startsWith("-") ? "text-negative" : prominent ? "text-white/60" : "text-text-secondary"
           }`}
         >
           {delta}

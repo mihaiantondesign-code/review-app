@@ -49,19 +49,19 @@ function CompAppSlot({
 
   if (app) {
     return (
-      <div className="border border-border rounded-md p-3" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="rounded-md p-3 bg-bg-tertiary" style={{ boxShadow: "var(--shadow-sm)" }}>
         <AppCard app={app} selected />
         <div className="flex gap-2 mt-2">
           <button
             onClick={onClear}
-            className="flex-1 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] rounded-sm transition-colors"
+            className="flex-1 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.98] rounded-pill transition-all duration-150"
           >
             Change
           </button>
           {canRemove && (
             <button
               onClick={onRemove}
-              className="flex-1 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-sm transition-colors"
+              className="flex-1 py-1.5 text-xs font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
             >
               Remove
             </button>
@@ -72,8 +72,8 @@ function CompAppSlot({
   }
 
   return (
-    <div className="border border-border rounded-md p-3" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <label className="block text-[13px] font-medium text-text-primary mb-1">
+    <div className="rounded-md p-3 bg-bg-tertiary" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <label className="block text-[13px] font-medium text-text-primary mb-1.5">
         App {index + 1}
       </label>
       <input
@@ -95,7 +95,7 @@ function CompAppSlot({
           }
         }}
         placeholder="Search app name..."
-        className="w-full px-3 py-2 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-colors"
+        className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
       />
       {search.trim() && !search.trim().match(/^\d+$/) && (
         <div className="mt-2">
@@ -109,7 +109,7 @@ function CompAppSlot({
       {canRemove && (
         <button
           onClick={onRemove}
-          className="mt-2 w-full py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-sm transition-colors"
+          className="mt-2 w-full py-1.5 text-xs font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
         >
           Remove
         </button>
@@ -178,90 +178,99 @@ export function ComparisonSection() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div>
+      {/* Input controls */}
+      <section className="mb-8">
         <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
           Compare Multiple Apps
         </h3>
-        <p className="text-[13px] text-text-secondary leading-relaxed">
-          Enter App Store IDs of apps you want to compare. You can find the ID
-          in any App Store URL: apps.apple.com/.../id<strong>284882215</strong>
+        <p className="text-[13px] text-text-secondary leading-relaxed mb-5">
+          Search for apps or enter an App Store ID directly (the number in any App Store URL:
+          apps.apple.com/.../id<code className="bg-bg-secondary px-1 py-0.5 rounded-sm font-mono text-xs">284882215</code>).
         </p>
-      </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-[13px] font-medium text-text-primary mb-1">
-            Country code
-          </label>
-          <input
-            type="text"
-            value={compCountry}
-            onChange={(e) => setCompCountry(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-colors"
-          />
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-[13px] font-medium text-text-primary mb-1.5">
+              Country code
+            </label>
+            <input
+              type="text"
+              value={compCountry}
+              onChange={(e) => setCompCountry(e.target.value)}
+              className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+            />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[13px] font-medium text-text-primary">
+                Months back
+              </label>
+              <span className="text-[13px] font-bold text-text-primary tabular-nums">{compMonths}</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={24}
+              value={compMonths}
+              onChange={(e) => setCompMonths(Number(e.target.value))}
+              className="w-full accent-text-primary mt-1"
+            />
+          </div>
+          <div>
+            <label className="block text-[13px] font-medium text-text-primary mb-1.5">
+              Max pages per app
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={compPages}
+              onChange={(e) => setCompPages(Number(e.target.value))}
+              className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-[13px] font-medium text-text-primary mb-1">
-            Months back: {compMonths}
-          </label>
-          <input
-            type="range"
-            min={1}
-            max={24}
-            value={compMonths}
-            onChange={(e) => setCompMonths(Number(e.target.value))}
-            className="w-full accent-text-primary mt-2"
-          />
+      </section>
+
+      {/* App slots */}
+      <section className="mb-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-3">
+          Apps to Compare
+        </p>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {apps.map((app, idx) => (
+            <CompAppSlot
+              key={idx}
+              index={idx}
+              app={app}
+              country={compCountry}
+              onSelect={(a) => updateApp(idx, a)}
+              onClear={() => updateApp(idx, null)}
+              onRemove={() => removeApp(idx)}
+              canRemove={apps.length > 2}
+            />
+          ))}
         </div>
-        <div>
-          <label className="block text-[13px] font-medium text-text-primary mb-1">
-            Max pages per app
-          </label>
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={compPages}
-            onChange={(e) => setCompPages(Number(e.target.value))}
-            className="w-full px-3 py-2 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-colors"
-          />
+
+        <div className="flex gap-4 items-center">
+          <button
+            onClick={addApp}
+            disabled={apps.length >= 10}
+            className="py-2 px-4 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.97] rounded-pill transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            + Add App
+          </button>
+          <button
+            onClick={handleCompare}
+            disabled={validIds.length < 2 || isCompFetching}
+            className="py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97] disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:shadow-none"
+          >
+            {isCompFetching ? "Comparing..." : "Compare Apps"}
+          </button>
         </div>
-      </div>
-
-      <h4 className="text-lg font-semibold text-text-primary">Apps to Compare</h4>
-
-      <div className="grid grid-cols-2 gap-4">
-        {apps.map((app, idx) => (
-          <CompAppSlot
-            key={idx}
-            index={idx}
-            app={app}
-            country={compCountry}
-            onSelect={(a) => updateApp(idx, a)}
-            onClear={() => updateApp(idx, null)}
-            onRemove={() => removeApp(idx)}
-            canRemove={apps.length > 2}
-          />
-        ))}
-      </div>
-
-      <div className="flex gap-4 items-center">
-        <button
-          onClick={addApp}
-          disabled={apps.length >= 10}
-          className="py-2 px-4 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] rounded-pill transition-colors disabled:opacity-30"
-        >
-          + Add App
-        </button>
-        <button
-          onClick={handleCompare}
-          disabled={validIds.length < 2 || isCompFetching}
-          className="py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all hover:bg-black hover:shadow-md disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed"
-        >
-          {isCompFetching ? "Comparing..." : "Compare Apps"}
-        </button>
-      </div>
+      </section>
 
       {isCompFetching && compProgress && (
         <ProgressOverlay progress={compProgress} />
@@ -322,81 +331,80 @@ function ComparisonResults({
   }, [summaryData]);
 
   return (
-    <div className="space-y-6">
-      <hr className="border-t border-border" />
-
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
-        Score Overview
-      </h3>
-
-      <div className="border border-border rounded-md overflow-hidden" style={{ boxShadow: "var(--shadow-sm)" }}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-bg-secondary">
-                <th className="px-4 py-2 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">App</th>
-                <th className="px-4 py-2 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Reviews</th>
-                <th className="px-4 py-2 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Avg Rating</th>
-                <th className="px-4 py-2 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Positive %</th>
-                <th className="px-4 py-2 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Negative %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summaryData.map((s) => (
-                <tr key={s.aid} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2 font-medium">{s.name}</td>
-                  <td className="px-4 py-2">{s.total}</td>
-                  <td className="px-4 py-2">{s.avg.toFixed(1)}</td>
-                  <td className="px-4 py-2">{s.posPct.toFixed(0)}%</td>
-                  <td className="px-4 py-2">{s.negPct.toFixed(0)}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div>
+      {/* Score overview — focal point */}
+      <section className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
+            Score Overview
+          </h3>
+          <button
+            onClick={onDownload}
+            className="py-2 px-5 text-xs font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
+          >
+            Download Excel
+          </button>
         </div>
-      </div>
 
-      <hr className="border-t border-border" />
+        <div className="rounded-md overflow-hidden" style={{ boxShadow: "var(--shadow-sm)" }}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-bg-secondary">
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">App</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Reviews</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Avg Rating</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Positive %</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Negative %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summaryData.map((s) => (
+                  <tr key={s.aid} className="border-b border-border last:border-0 hover:bg-bg-secondary/50 transition-colors">
+                    <td className="px-4 py-2.5 font-medium">{s.name}</td>
+                    <td className="px-4 py-2.5 tabular-nums">{s.total}</td>
+                    <td className="px-4 py-2.5 tabular-nums">{s.avg.toFixed(1)}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-positive">{s.posPct.toFixed(0)}%</td>
+                    <td className="px-4 py-2.5 tabular-nums text-negative">{s.negPct.toFixed(0)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
-        Rating Distribution Comparison
-      </h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={ratingChartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
-          <XAxis dataKey="rating" tick={{ fontSize: 13 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip
-            contentStyle={{
-              borderRadius: 8,
-              border: "1px solid rgba(0,0,0,0.06)",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            }}
-          />
-          <Legend />
-          {summaryData
-            .filter((s) => s.total > 0)
-            .map((s, i) => (
-              <Bar key={s.aid} dataKey={s.name} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
-            ))}
-        </BarChart>
-      </ResponsiveContainer>
+      {/* Rating distribution chart */}
+      <section className="mb-10">
+        <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-4">
+          Rating Distribution
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={ratingChartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+            <XAxis dataKey="rating" tick={{ fontSize: 13 }} />
+            <YAxis tick={{ fontSize: 12 }} />
+            <Tooltip
+              contentStyle={{
+                borderRadius: 8,
+                border: "1px solid rgba(0,0,0,0.06)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              }}
+            />
+            <Legend />
+            {summaryData
+              .filter((s) => s.total > 0)
+              .map((s, i) => (
+                <Bar key={s.aid} dataKey={s.name} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
+              ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </section>
 
-      <hr className="border-t border-border" />
-
-      <HeadToHead compData={compData} compNames={compNames} />
-
-      <hr className="border-t border-border" />
-
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
-        Download Comparison Data
-      </h3>
-      <button
-        onClick={onDownload}
-        className="py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all hover:bg-black hover:shadow-md"
-      >
-        Download all reviews (Excel)
-      </button>
+      {/* Head-to-head — wrapped in bg-bg-secondary for visual separation */}
+      <section className="bg-bg-secondary rounded-lg p-6 mb-10">
+        <HeadToHead compData={compData} compNames={compNames} />
+      </section>
     </div>
   );
 }
@@ -445,11 +453,14 @@ function HeadToHead({
 
   return (
     <div>
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-4">
+      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
         Head-to-Head: Problems & Wins
       </h3>
+      <p className="text-[13px] text-text-secondary leading-relaxed mb-5">
+        Top recurring themes extracted from 1-2 star and 4-5 star reviews for each app.
+      </p>
 
-      <div className={`grid gap-6`} style={{ gridTemplateColumns: `repeat(${appList.length}, 1fr)` }}>
+      <div className={`grid gap-6`} style={{ gridTemplateColumns: `repeat(${Math.min(appList.length, 3)}, 1fr)` }}>
         {appList.map(([aid, reviews]) => {
           const name = compNames[aid] || aid;
           const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
@@ -457,29 +468,32 @@ function HeadToHead({
 
           return (
             <div key={aid}>
-              <h4 className="text-lg font-semibold text-text-primary mb-1">{name}</h4>
-              <p className="text-sm text-text-secondary mb-3">
-                <strong>{avg.toFixed(1)}</strong> / 5 ({reviews.length} reviews)
+              <h4 className="text-base font-semibold text-text-primary mb-0.5">{name}</h4>
+              <p className="text-[13px] text-text-secondary mb-4">
+                <span className="font-bold text-text-primary tabular-nums">{avg.toFixed(1)}</span> / 5 &middot; {reviews.length} reviews
               </p>
 
-              <p className="text-sm font-semibold text-text-primary mb-2">Top Problems</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-2">Top Problems</p>
               {!appThemes ? (
-                <p className="text-xs text-text-secondary">Loading...</p>
+                <p className="text-xs text-text-secondary">Analyzing themes...</p>
               ) : appThemes.problems.length === 0 ? (
-                <p className="text-xs text-text-secondary">No major problems found</p>
+                <p className="text-xs text-text-secondary bg-bg-primary rounded-sm p-2">No major problems found</p>
               ) : (
-                <Accordion.Root type="multiple" className="space-y-1">
+                <Accordion.Root type="multiple" className="space-y-1.5">
                   {appThemes.problems.map((p, i) => (
-                    <Accordion.Item key={i} value={`p-${i}`} className="border border-border rounded-sm overflow-hidden">
+                    <Accordion.Item key={i} value={`p-${i}`} className="rounded-md overflow-hidden bg-bg-primary" style={{ boxShadow: "var(--shadow-sm)" }}>
                       <Accordion.Header>
-                        <Accordion.Trigger className="w-full px-3 py-2 text-left text-xs font-medium flex justify-between items-center hover:bg-bg-secondary/50 group">
-                          <span>&ldquo;{p.theme}&rdquo; ({p.mentions}x)</span>
-                          <svg className="w-3 h-3 text-text-secondary group-data-[state=open]:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <Accordion.Trigger className="w-full px-3 py-2.5 text-left text-xs font-medium flex justify-between items-center hover:bg-[rgba(0,0,0,0.02)] transition-colors group">
+                          <span>
+                            &ldquo;{p.theme}&rdquo;
+                            <span className="text-text-tertiary font-normal ml-1.5">{p.mentions}x</span>
+                          </span>
+                          <svg className="w-3 h-3 text-text-tertiary group-data-[state=open]:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                           </svg>
                         </Accordion.Trigger>
                       </Accordion.Header>
-                      <Accordion.Content className="px-3 pb-2 text-xs text-text-secondary">
+                      <Accordion.Content className="px-3 pb-2.5 text-xs text-text-secondary leading-relaxed">
                         {p.example_review.slice(0, 200)}{p.example_review.length > 200 ? "..." : ""}
                       </Accordion.Content>
                     </Accordion.Item>
@@ -487,24 +501,27 @@ function HeadToHead({
                 </Accordion.Root>
               )}
 
-              <p className="text-sm font-semibold text-text-primary mt-4 mb-2">Top Wins</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mt-5 mb-2">Top Wins</p>
               {!appThemes ? (
-                <p className="text-xs text-text-secondary">Loading...</p>
+                <p className="text-xs text-text-secondary">Analyzing themes...</p>
               ) : appThemes.wins.length === 0 ? (
-                <p className="text-xs text-text-secondary">No strong wins found</p>
+                <p className="text-xs text-text-secondary bg-bg-primary rounded-sm p-2">No strong wins found</p>
               ) : (
-                <Accordion.Root type="multiple" className="space-y-1">
+                <Accordion.Root type="multiple" className="space-y-1.5">
                   {appThemes.wins.map((w, i) => (
-                    <Accordion.Item key={i} value={`w-${i}`} className="border border-border rounded-sm overflow-hidden">
+                    <Accordion.Item key={i} value={`w-${i}`} className="rounded-md overflow-hidden bg-bg-primary" style={{ boxShadow: "var(--shadow-sm)" }}>
                       <Accordion.Header>
-                        <Accordion.Trigger className="w-full px-3 py-2 text-left text-xs font-medium flex justify-between items-center hover:bg-bg-secondary/50 group">
-                          <span>&ldquo;{w.theme}&rdquo; ({w.mentions}x)</span>
-                          <svg className="w-3 h-3 text-text-secondary group-data-[state=open]:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <Accordion.Trigger className="w-full px-3 py-2.5 text-left text-xs font-medium flex justify-between items-center hover:bg-[rgba(0,0,0,0.02)] transition-colors group">
+                          <span>
+                            &ldquo;{w.theme}&rdquo;
+                            <span className="text-text-tertiary font-normal ml-1.5">{w.mentions}x</span>
+                          </span>
+                          <svg className="w-3 h-3 text-text-tertiary group-data-[state=open]:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                           </svg>
                         </Accordion.Trigger>
                       </Accordion.Header>
-                      <Accordion.Content className="px-3 pb-2 text-xs text-text-secondary">
+                      <Accordion.Content className="px-3 pb-2.5 text-xs text-text-secondary leading-relaxed">
                         {w.example_review.slice(0, 200)}{w.example_review.length > 200 ? "..." : ""}
                       </Accordion.Content>
                     </Accordion.Item>

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { MetricCard } from "@/components/shared/MetricCard";
+import { StarRating } from "@/components/shared/StarRating";
 import { ProgressOverlay } from "@/components/shared/ProgressOverlay";
 import { ReviewsTable } from "@/components/shared/ReviewsTable";
 import { RatingDistributionChart } from "@/components/shared/RatingDistributionChart";
@@ -47,6 +48,7 @@ export function AppStoreSection() {
           icon="🔍"
           title="No reviews found"
           description="Try adjusting your App ID, country, or time range in the sidebar."
+          tone="action"
         />
       );
     }
@@ -60,68 +62,66 @@ export function AppStoreSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
+      {/* Chapter 1: Score overview — the focal point */}
       {stats && (
-        <>
-          <div>
-            <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
-              Overall Score: {"★".repeat(Math.round(stats.avg))}{" "}
-              <span className="font-bold">{stats.avg.toFixed(1)}</span> / 5
-            </h3>
-            <p className="text-[13px] text-text-secondary">
-              Based on <strong>{stats.total}</strong> reviews
-            </p>
+        <section className="mb-10">
+          <div className="flex items-baseline gap-3 mb-1">
+            <span className="text-4xl font-bold text-text-primary tracking-tight">
+              {stats.avg.toFixed(1)}
+            </span>
+            <StarRating rating={stats.avg} size="lg" />
+            <span className="text-sm text-text-tertiary">/ 5</span>
           </div>
+          <p className="text-[13px] text-text-secondary mb-5">
+            Based on <strong>{stats.total}</strong> reviews
+          </p>
 
           <div className="grid grid-cols-5 gap-3">
             {stats.counts.map((c) => (
               <MetricCard
                 key={c.rating}
                 label={"★".repeat(c.rating)}
-                value={`${c.count} (${c.pct.toFixed(0)}%)`}
+                value={`${c.count}`}
+                help={`${c.pct.toFixed(1)}% of all reviews`}
               />
             ))}
           </div>
 
-          <hr className="border-t border-border" />
-
-          <div>
-            <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-2">
-              Rating Distribution
-            </h3>
+          <div className="mt-6">
             <RatingDistributionChart reviews={reviews} />
           </div>
-
-          <hr className="border-t border-border" />
-        </>
+        </section>
       )}
 
-      <div>
-        <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-4">
-          All Reviews
-        </h3>
+      {/* Chapter 2: Reviews data */}
+      <section className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
+            All Reviews
+          </h3>
+          <button
+            onClick={handleDownload}
+            className="py-2 px-5 text-xs font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
+          >
+            Download Excel
+          </button>
+        </div>
         <ReviewsTable reviews={reviews} />
-      </div>
+      </section>
 
-      <hr className="border-t border-border" />
+      {/* Chapter 3: Insights — opens up into breathing room */}
+      <section className="bg-bg-secondary rounded-lg p-6 mb-10">
+        <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-6">
+          Insights
+        </h3>
+        <InsightsPanel reviews={reviews} />
+      </section>
 
-      <button
-        onClick={handleDownload}
-        className="py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all hover:bg-black hover:shadow-md"
-      >
-        Download Reviews (Excel)
-      </button>
-
-      <hr className="border-t border-border" />
-
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
-        Insights
-      </h3>
-      <InsightsPanel reviews={reviews} />
-
-      <hr className="border-t border-border" />
-
-      <VersionInsights reviews={reviews} />
+      {/* Chapter 4: Version data */}
+      <section>
+        <VersionInsights reviews={reviews} />
+      </section>
     </div>
   );
 }

@@ -30,14 +30,12 @@ export function Sidebar() {
   const [maxPages, setMaxPages] = useState(10);
   const abortRef = useRef<(() => void) | null>(null);
 
-  // Debounced search
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
     }
 
-    // If it's a numeric ID, auto-select
     if (searchQuery.trim().match(/^\d+$/)) {
       setSelectedApp({
         id: searchQuery.trim(),
@@ -79,9 +77,7 @@ export function Sidebar() {
     const url = getAppStoreSSEUrl(selectedApp.id, countryCode, pages, cutoffDays);
 
     abortRef.current = consumeSSE(url, {
-      onProgress: (data) => {
-        setFetchProgress(data);
-      },
+      onProgress: (data) => setFetchProgress(data),
       onComplete: (data) => {
         setReviews(data.reviews);
         setFetchDone(true);
@@ -98,26 +94,25 @@ export function Sidebar() {
   }, [selectedApp, countryCode, fetchMode, months, maxPages, setIsFetching, setFetchDone, setReviews, setFetchProgress]);
 
   return (
-    <aside className="w-[300px] shrink-0 bg-bg-secondary border-r border-border h-screen overflow-y-auto p-5">
-      <div className="mb-6">
-        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary mb-2">
+    <aside className="w-[300px] shrink-0 bg-bg-secondary border-r border-border h-screen overflow-y-auto">
+      {/* App Search — primary section, gets more visual weight */}
+      <div className="px-5 pt-6 pb-4">
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-4">
           App Store
         </h2>
 
-        <label className="block text-[13px] font-medium text-text-primary mb-1">
-          Country
+        <label className="block text-[13px] font-medium text-text-primary mb-1.5">
+          Country code
         </label>
         <input
           type="text"
           value={countryCode}
           onChange={(e) => setCountryCode(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-colors"
+          className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
           placeholder="e.g. it, us"
         />
-      </div>
 
-      <div className="mb-4">
-        <label className="block text-[13px] font-medium text-text-primary mb-1">
+        <label className="block text-[13px] font-medium text-text-primary mb-1.5 mt-4">
           Search App
         </label>
         <input
@@ -127,104 +122,113 @@ export function Sidebar() {
             setSearchQuery(e.target.value);
             if (!e.target.value.trim()) setSelectedApp(null);
           }}
-          className="w-full px-3 py-2 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-colors"
+          className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
           placeholder="e.g. WhatsApp, Instagram..."
         />
+
+        {selectedApp ? (
+          <div className="mt-3">
+            <AppCard app={selectedApp} selected />
+            <button
+              onClick={() => {
+                setSelectedApp(null);
+                setSearchQuery("");
+              }}
+              className="mt-2 w-full py-2 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.98] rounded-pill transition-all duration-150"
+            >
+              Change app
+            </button>
+          </div>
+        ) : (
+          searchQuery.trim() && (
+            <div className="mt-3">
+              {isSearching ? (
+                <p className="text-xs text-text-tertiary py-2">Searching...</p>
+              ) : (
+                <AppSearchResults
+                  results={searchResults}
+                  onSelect={(app) => {
+                    setSelectedApp(app);
+                    setSearchQuery(app.name);
+                  }}
+                />
+              )}
+            </div>
+          )
+        )}
       </div>
 
-      {selectedApp ? (
-        <div className="mb-4">
-          <AppCard app={selectedApp} selected />
+      <div className="mx-5 border-t border-border" />
+
+      {/* Fetch controls — secondary section, less weight */}
+      <div className="px-5 py-4">
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-3">
+          Fetch Mode
+        </h2>
+        <div className="flex gap-0.5 mb-4 bg-bg-primary rounded-pill p-1">
           <button
-            onClick={() => {
-              setSelectedApp(null);
-              setSearchQuery("");
-            }}
-            className="mt-2 w-full py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] rounded-pill transition-colors"
+            onClick={() => setFetchMode("time")}
+            className={`flex-1 py-2 text-xs font-medium rounded-pill transition-all duration-150 ${
+              fetchMode === "time"
+                ? "bg-text-primary text-white shadow-sm"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
           >
-            Change app
+            Time period
+          </button>
+          <button
+            onClick={() => setFetchMode("pages")}
+            className={`flex-1 py-2 text-xs font-medium rounded-pill transition-all duration-150 ${
+              fetchMode === "pages"
+                ? "bg-text-primary text-white shadow-sm"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            Pages
           </button>
         </div>
-      ) : (
-        searchQuery.trim() && (
+
+        {fetchMode === "time" ? (
           <div className="mb-4">
-            {isSearching ? (
-              <p className="text-xs text-text-secondary">Searching...</p>
-            ) : (
-              <AppSearchResults results={searchResults} onSelect={(app) => {
-                setSelectedApp(app);
-                setSearchQuery(app.name);
-              }} />
-            )}
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[13px] font-medium text-text-primary">
+                Months back
+              </label>
+              <span className="text-[13px] font-bold text-text-primary tabular-nums">{months}</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={24}
+              value={months}
+              onChange={(e) => setMonths(Number(e.target.value))}
+              className="w-full accent-text-primary"
+            />
           </div>
-        )
-      )}
+        ) : (
+          <div className="mb-4">
+            <label className="block text-[13px] font-medium text-text-primary mb-1.5">
+              Pages to fetch
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={maxPages}
+              onChange={(e) => setMaxPages(Number(e.target.value))}
+              className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+            />
+          </div>
+        )}
 
-      <hr className="border-t border-border my-4" />
-
-      <h2 className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary mb-2">
-        Fetch Mode
-      </h2>
-      <div className="flex gap-1 mb-3 bg-bg-primary rounded-pill p-0.5">
         <button
-          onClick={() => setFetchMode("time")}
-          className={`flex-1 py-2 text-xs font-medium rounded-pill transition-colors ${
-            fetchMode === "time"
-              ? "bg-[rgba(0,0,0,0.06)] text-text-primary font-semibold"
-              : "text-text-secondary hover:text-text-primary"
-          }`}
+          onClick={handleFetch}
+          disabled={!selectedApp || isFetching}
+          className="w-full py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97] disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:shadow-none"
         >
-          Time period
-        </button>
-        <button
-          onClick={() => setFetchMode("pages")}
-          className={`flex-1 py-2 text-xs font-medium rounded-pill transition-colors ${
-            fetchMode === "pages"
-              ? "bg-[rgba(0,0,0,0.06)] text-text-primary font-semibold"
-              : "text-text-secondary hover:text-text-primary"
-          }`}
-        >
-          Pages
+          {isFetching ? "Fetching..." : "Fetch Reviews"}
         </button>
       </div>
-
-      {fetchMode === "time" ? (
-        <div className="mb-4">
-          <label className="block text-[13px] font-medium text-text-primary mb-1">
-            Months back: {months}
-          </label>
-          <input
-            type="range"
-            min={1}
-            max={24}
-            value={months}
-            onChange={(e) => setMonths(Number(e.target.value))}
-            className="w-full accent-text-primary"
-          />
-        </div>
-      ) : (
-        <div className="mb-4">
-          <label className="block text-[13px] font-medium text-text-primary mb-1">
-            Pages to fetch
-          </label>
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={maxPages}
-            onChange={(e) => setMaxPages(Number(e.target.value))}
-            className="w-full px-3 py-2 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-colors"
-          />
-        </div>
-      )}
-
-      <button
-        onClick={handleFetch}
-        disabled={!selectedApp || isFetching}
-        className="w-full py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all hover:bg-black hover:shadow-md disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed"
-      >
-        {isFetching ? "Fetching..." : "Fetch Reviews"}
-      </button>
     </aside>
   );
 }
