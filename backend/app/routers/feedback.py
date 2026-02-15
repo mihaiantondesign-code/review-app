@@ -6,7 +6,7 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8591602091:AAEQ3vqYSrqyyVLJxKyXiNhBbZZdBZafFf0")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "@heymihai")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "148844183")
 
 
 class FeedbackPayload(BaseModel):
