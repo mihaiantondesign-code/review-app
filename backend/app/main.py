@@ -10,9 +10,17 @@ allowed_origins = os.environ.get(
     "http://localhost:3000,http://localhost:3001",
 ).split(",")
 
+allowed_origin_regex = (
+    r"https://review-app-.*\.vercel\.app"
+    r"|https://.*-mihaiantondesign-codes-projects\.vercel\.app"
+    r"|https://.*\.koyeb\.app"
+    r"|http://localhost:\d+"
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=allowed_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
