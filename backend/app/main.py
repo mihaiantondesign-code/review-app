@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import apps, reviews, analysis, export, jobs
+from app.routers import apps, reviews, analysis, export, jobs, feedback
 
 app = FastAPI(title="App Store Reviewer API", version="1.0.0")
 
@@ -32,6 +32,7 @@ app.include_router(reviews.router)
 app.include_router(analysis.router)
 app.include_router(export.router)
 app.include_router(jobs.router)
+app.include_router(feedback.router)
 
 
 @app.get("/health")
