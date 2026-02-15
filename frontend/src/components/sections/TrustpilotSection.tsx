@@ -186,7 +186,7 @@ export function TrustpilotSection() {
         <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">Trustpilot Reviews</h3>
         <p className="text-[13px] text-text-secondary leading-relaxed mb-5">Search for any company on Trustpilot and fetch their reviews.</p>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-[13px] font-medium text-text-primary mb-1.5">Company</label>
             <TrustpilotSearchPicker selected={selected} onSelect={setSelected} onClear={() => setSelected(null)} />
@@ -200,7 +200,7 @@ export function TrustpilotSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-[13px] font-medium text-text-primary">Months back</label>
@@ -216,7 +216,7 @@ export function TrustpilotSection() {
         </div>
 
         <button onClick={handleFetch} disabled={!selected || isTpFetching}
-          className="py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97] disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:shadow-none">
+          className="w-full sm:w-auto py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97] disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:shadow-none">
           {isTpFetching ? "Fetching…" : "Fetch Reviews"}
         </button>
       </section>
@@ -240,7 +240,7 @@ export function TrustpilotSection() {
                   <p className="text-[13px] text-text-secondary">on Trustpilot</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <MetricCard label="TrustScore" value={`${trustpilotInfo.trustScore.toFixed(1)} / 5`} prominent />
                 <MetricCard label="Stars" value={"★".repeat(Math.round(trustpilotInfo.stars))} />
                 <MetricCard label="Total Reviews (all time)" value={trustpilotInfo.totalReviews.toLocaleString()} />
@@ -251,7 +251,7 @@ export function TrustpilotSection() {
             </section>
           )}
 
-          <section className="bg-bg-secondary rounded-lg p-6 mb-8">
+          <section className="bg-bg-secondary rounded-lg p-4 sm:p-6 mb-8">
             <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-6">Insights</h3>
             <InsightsPanel reviews={trustpilotReviews} source="trustpilot" />
           </section>

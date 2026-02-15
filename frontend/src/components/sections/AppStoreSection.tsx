@@ -142,8 +142,8 @@ function ReviewCard({ review }: { review: Review }) {
 
   return (
     <div className="bg-bg-primary rounded-xl border border-border p-5" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <div className="flex gap-5">
-        {/* Left — main content */}
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
+        {/* Main content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <StarRating rating={review.rating} size="sm" />
@@ -162,8 +162,8 @@ function ReviewCard({ review }: { review: Review }) {
           </p>
         </div>
 
-        {/* Right — metadata sidebar */}
-        <div className="shrink-0 w-[148px] space-y-1.5 border-l border-border pl-4">
+        {/* Metadata — row on mobile, sidebar on sm+ */}
+        <div className="flex sm:flex-col gap-x-4 gap-y-1 flex-wrap sm:shrink-0 sm:w-[148px] sm:space-y-1.5 sm:border-l sm:border-border sm:pl-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
           {[
             { label: "Published", value: formatDate(review.date) },
             { label: "Author", value: review.author || "—" },
@@ -260,30 +260,33 @@ function ReviewListings({ reviews, onDownload }: { reviews: Review[]; onDownload
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="flex gap-1">
-          {[1, 2, 3, 4, 5].map((r) => (
-            <button
-              key={r}
-              onClick={() => toggleRating(r)}
-              className={`px-2.5 py-1.5 text-xs font-medium rounded-pill transition-all duration-150 ${
-                ratingFilter.has(r)
-                  ? "bg-text-primary text-white shadow-sm"
-                  : "bg-[rgba(0,0,0,0.04)] text-text-tertiary hover:bg-[rgba(0,0,0,0.07)]"
-              }`}
-            >
-              {r}★
-            </button>
-          ))}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((r) => (
+              <button
+                key={r}
+                onClick={() => toggleRating(r)}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded-pill transition-all duration-150 ${
+                  ratingFilter.has(r)
+                    ? "bg-text-primary text-white shadow-sm"
+                    : "bg-[rgba(0,0,0,0.04)] text-text-tertiary hover:bg-[rgba(0,0,0,0.07)]"
+                }`}
+              >
+                {r}★
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-text-tertiary tabular-nums sm:hidden">{filtered.length.toLocaleString()} reviews</span>
         </div>
         <input
           type="text"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search reviews…"
-          className="flex-1 min-w-[180px] max-w-[260px] px-3 py-1.5 text-xs border border-border-strong rounded-pill bg-bg-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all"
+          className="w-full sm:flex-1 sm:max-w-[260px] px-3 py-1.5 text-xs border border-border-strong rounded-pill bg-bg-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all"
         />
-        <span className="text-xs text-text-tertiary tabular-nums ml-auto">{filtered.length.toLocaleString()} reviews</span>
+        <span className="hidden sm:block text-xs text-text-tertiary tabular-nums ml-auto">{filtered.length.toLocaleString()} reviews</span>
       </div>
 
       {/* Groups */}
@@ -414,7 +417,7 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
 
       {/* ── 4 stat cards ── */}
       {stats && (
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           {/* 1. Total reviews */}
           <div className="bg-bg-primary rounded-xl border border-border p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
             <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-2">Reviews</p>
@@ -465,7 +468,7 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
 
       {activeTab === "trend" && (
         <div className="space-y-10">
-          <section className="bg-bg-secondary rounded-lg p-6">
+          <section className="bg-bg-secondary rounded-lg p-4 sm:p-6">
             <h3 className="text-[18px] font-semibold text-text-primary tracking-tight mb-6">Insights</h3>
             <InsightsPanel reviews={reviews} />
           </section>

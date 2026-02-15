@@ -15,12 +15,12 @@ export function SectionNav() {
 
   return (
     <Tabs.Root value={activeSection} onValueChange={(v) => setActiveSection(v as ActiveSection)}>
-      <Tabs.List className="flex bg-bg-secondary rounded-pill p-1 gap-1 w-fit">
+      <Tabs.List className="flex bg-bg-secondary rounded-pill p-1 gap-1 w-full sm:w-fit">
         {sections.map((s) => (
           <Tabs.Trigger
             key={s.value}
             value={s.value}
-            className="px-6 py-2.5 text-sm font-medium rounded-pill transition-colors data-[state=active]:bg-[rgba(0,0,0,0.06)] data-[state=active]:text-text-primary data-[state=active]:font-semibold text-text-secondary hover:text-text-primary"
+            className="flex-1 sm:flex-none px-3 sm:px-6 py-2.5 text-sm font-medium rounded-pill transition-colors data-[state=active]:bg-[rgba(0,0,0,0.06)] data-[state=active]:text-text-primary data-[state=active]:font-semibold text-text-secondary hover:text-text-primary"
           >
             {s.label}
           </Tabs.Trigger>
