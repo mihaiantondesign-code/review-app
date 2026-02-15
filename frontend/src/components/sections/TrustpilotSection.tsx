@@ -52,16 +52,35 @@ function TrustpilotSearchPicker({ selected, onSelect, onClear }: {
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Extract domain from a Trustpilot URL, e.g. "trustpilot.com/review/company.it" → "company.it"
+  function extractTpDomain(raw: string): string | null {
+    const s = raw.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "");
+    const m = s.match(/^trustpilot\.com\/review\/([^/?#\s]+)/i);
+    return m ? m[1] : null;
+  }
+
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!query.trim()) { setResults([]); setLoading(false); return; }
+
+    // If the user pasted a Trustpilot URL, extract the domain and auto-select immediately
+    const urlDomain = extractTpDomain(query);
+    if (urlDomain) {
+      setResults([]);
+      setLoading(false);
+      onSelect({ name: urlDomain, domain: urlDomain, logo: "", stars: 0, reviews: 0 });
+      setQuery("");
+      setOpen(false);
+      return;
+    }
+
     setLoading(true);
     timerRef.current = setTimeout(async () => {
       try { setResults(await searchTrustpilot(query.trim())); }
       catch { setResults([]); }
       setLoading(false);
     }, 400);
-  }, [query]);
+  }, [query, onSelect]);
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
