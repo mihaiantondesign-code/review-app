@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCompare } from "@/hooks/useCompare";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -102,7 +102,7 @@ export function ComparisonSection() {
     isCompFetching,
     compProgress,
     countryCode,
-    selectedApp,
+    selectedApps,
   } = useAppStore();
 
   const { compare } = useCompare();
@@ -110,14 +110,21 @@ export function ComparisonSection() {
   const [compPages, setCompPages] = useState(10);
   const [compCountry, setCompCountry] = useState(countryCode);
 
-  // Initialize first slot with selected app
+  // Pre-fill slots from sidebar selectedApps; fall back to stored compApps
   const apps = useMemo(() => {
-    const a = [...compApps];
-    if (a[0] === null && selectedApp) {
-      a[0] = selectedApp;
+    // If user has selected apps in the sidebar, use those to seed slots
+    if (selectedApps.length > 0) {
+      const merged = [...selectedApps] as (typeof selectedApps[0] | null)[];
+      // Keep any extra compApps slots that go beyond selectedApps length
+      for (let i = selectedApps.length; i < compApps.length; i++) {
+        merged.push(compApps[i]);
+      }
+      // Ensure at least 2 slots
+      while (merged.length < 2) merged.push(null);
+      return merged;
     }
-    return a;
-  }, [compApps, selectedApp]);
+    return [...compApps];
+  }, [compApps, selectedApps]);
 
   const validIds = apps.filter((a) => a !== null);
 
