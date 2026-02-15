@@ -8,7 +8,6 @@ import type { Review } from "@/types/index";
 
 export function useFetchReviews() {
   const abortRef = useRef<(() => void) | null>(null);
-  const accumulatedRef = useRef<Review[]>([]);
   const {
     selectedApp,
     countryCode,
@@ -18,12 +17,18 @@ export function useFetchReviews() {
     setIsFetching,
   } = useAppStore();
 
+  const finish = useCallback((reviews: Review[]) => {
+    setReviews(reviews);
+    setFetchDone(true);
+    setIsFetching(false);
+    setFetchProgress(null);
+  }, [setReviews, setFetchDone, setIsFetching, setFetchProgress]);
+
   const fetch = useCallback(
     (maxPages: number, cutoffDays: number) => {
       if (!selectedApp) return;
 
       abortRef.current?.();
-      accumulatedRef.current = [];
 
       setIsFetching(true);
       setFetchDone(false);
@@ -33,42 +38,22 @@ export function useFetchReviews() {
 
       abortRef.current = consumeSSE(url, {
         onProgress: (data) => setFetchProgress(data),
-        onReviewsChunk: (data) => {
-          // Accumulate chunks — show results progressively
-          accumulatedRef.current = [...accumulatedRef.current, ...data.reviews];
-          setReviews(accumulatedRef.current);
-        },
-        onComplete: (data) => {
-          // Use complete payload if available, fallback to accumulated chunks
-          const reviews = data.reviews.length > 0 ? data.reviews : accumulatedRef.current;
-          setReviews(reviews);
-          setFetchDone(true);
-          setIsFetching(false);
-          setFetchProgress(null);
-        },
+        onComplete: (data) => finish(data.reviews),
         onError: () => {
-          // Connection dropped — show whatever we have so far
-          if (accumulatedRef.current.length > 0) {
-            setReviews(accumulatedRef.current);
-          }
           setFetchDone(true);
           setIsFetching(false);
           setFetchProgress(null);
         },
       });
     },
-    [selectedApp, countryCode, setReviews, setFetchDone, setFetchProgress, setIsFetching]
+    [selectedApp, countryCode, setReviews, setFetchDone, setFetchProgress, setIsFetching, finish]
   );
 
   const cancel = useCallback(() => {
     abortRef.current?.();
-    if (accumulatedRef.current.length > 0) {
-      setReviews(accumulatedRef.current);
-    }
-    setFetchDone(true);
     setIsFetching(false);
     setFetchProgress(null);
-  }, [setReviews, setFetchDone, setIsFetching, setFetchProgress]);
+  }, [setIsFetching, setFetchProgress]);
 
   return { fetch, cancel };
 }
