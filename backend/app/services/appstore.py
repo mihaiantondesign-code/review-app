@@ -120,11 +120,10 @@ def fetch_reviews_generator(app_id: str, country: str, max_pages: int, cutoff_da
             response = requests.get(url, timeout=15)
             response.raise_for_status()
             data = response.json()
-        except requests.exceptions.RequestException as e:
-            yield ("error", {"message": f"Page {page}: Network error - {e}"})
+        except requests.exceptions.RequestException:
+            # Page doesn't exist or network error — stop fetching but still return what we have
             break
         except ValueError:
-            yield ("error", {"message": f"Page {page}: Invalid JSON response"})
             break
 
         feed = data.get("feed", {})
