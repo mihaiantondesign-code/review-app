@@ -48,6 +48,68 @@ def fetch_page(domain: str, page: int) -> tuple[int, str]:
     raise Exception(f"Domain '{domain}' not found on Trustpilot (404 on both it. and www. subdomains)")
 
 
+def fetch_reviews_simple(domain: str, max_pages: int, cutoff_date: datetime) -> tuple[list[dict], dict | None]:
+    """Blocking fetch — returns (reviews, business_info). Used by polling jobs."""
+    all_reviews = []
+    business_info = None
+
+    for page in range(1, max_pages + 1):
+        try:
+            status_code, html = fetch_page(domain, page)
+            if status_code != 200 or len(html) < 1000:
+                break
+            match = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL)
+            if not match:
+                break
+            nd = json.loads(match.group(1))
+            props = nd.get("props", {}).get("pageProps", {})
+
+            if page == 1:
+                bu = props.get("businessUnit", {})
+                business_info = {
+                    "name": bu.get("displayName", domain),
+                    "trustScore": bu.get("trustScore", 0),
+                    "stars": bu.get("stars", 0),
+                    "totalReviews": bu.get("numberOfReviews", 0),
+                }
+                pagination = props.get("filters", {}).get("pagination", {})
+                total_pages = pagination.get("totalPages", 1)
+                if max_pages > total_pages:
+                    max_pages = total_pages
+
+            reviews = props.get("reviews", [])
+            if not reviews:
+                break
+
+            all_too_old = True
+            for r in reviews:
+                try:
+                    pub_date_str = r.get("dates", {}).get("publishedDate", "")
+                    if not pub_date_str:
+                        continue
+                    pub_date = datetime.fromisoformat(pub_date_str.replace("Z", "+00:00"))
+                    if pub_date < cutoff_date:
+                        continue
+                    all_too_old = False
+                    all_reviews.append({
+                        "date": pub_date.isoformat(),
+                        "rating": r.get("rating", 0),
+                        "title": r.get("title", ""),
+                        "review": r.get("text", ""),
+                        "author": r.get("consumer", {}).get("displayName", ""),
+                        "version": "N/A",
+                    })
+                except Exception:
+                    continue
+
+            if all_too_old and page > 1:
+                break
+        except Exception:
+            break
+
+    return all_reviews, business_info
+
+
 def fetch_reviews_generator(domain: str, max_pages: int, cutoff_date: datetime):
     """Generator that yields (event_type, data) tuples for SSE streaming."""
     all_reviews = []

@@ -14,6 +14,30 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
   });
 }
 
+export async function startAppStoreJob(appId: string, country: string, maxPages: number, cutoffDays: number) {
+  return postJSON<{ job_id: string }>("/api/jobs/appstore/start", {
+    app_id: appId, country, max_pages: maxPages, cutoff_days: cutoffDays,
+  });
+}
+
+export async function startTrustpilotJob(domain: string, maxPages: number, cutoffDays: number) {
+  return postJSON<{ job_id: string }>("/api/jobs/trustpilot/start", {
+    domain, max_pages: maxPages, cutoff_days: cutoffDays,
+  });
+}
+
+export async function getJobStatus(jobId: string) {
+  return fetchJSON<{ status: string; total: number; error?: string }>(`/api/jobs/status/${jobId}`);
+}
+
+export async function getJobResult(jobId: string) {
+  return fetchJSON<{
+    reviews: { date: string; rating: number; title: string; review: string; author: string; version: string }[];
+    total: number;
+    business_info?: { name: string; trustScore: number; stars: number; totalReviews: number } | null;
+  }>(`/api/jobs/result/${jobId}`);
+}
+
 export async function searchApps(query: string, country: string) {
   return fetchJSON<
     {

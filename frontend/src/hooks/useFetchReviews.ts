@@ -2,12 +2,14 @@
 
 import { useCallback, useRef } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { getAppStoreSSEUrl } from "@/lib/api";
-import { consumeSSE } from "@/lib/sse";
-import type { Review } from "@/types/index";
+import { startAppStoreJob, getJobStatus, getJobResult } from "@/lib/api";
+
+const POLL_INTERVAL = 2000; // ms
 
 export function useFetchReviews() {
-  const abortRef = useRef<(() => void) | null>(null);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelledRef = useRef(false);
+
   const {
     selectedApp,
     countryCode,
@@ -17,43 +19,84 @@ export function useFetchReviews() {
     setIsFetching,
   } = useAppStore();
 
-  const finish = useCallback((reviews: Review[]) => {
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) clearTimeout(pollRef.current);
+    cancelledRef.current = true;
+  }, []);
+
+  const finish = useCallback((reviews: Parameters<typeof setReviews>[0]) => {
+    stopPolling();
     setReviews(reviews);
     setFetchDone(true);
     setIsFetching(false);
     setFetchProgress(null);
-  }, [setReviews, setFetchDone, setIsFetching, setFetchProgress]);
+  }, [stopPolling, setReviews, setFetchDone, setIsFetching, setFetchProgress]);
 
   const fetch = useCallback(
-    (maxPages: number, cutoffDays: number) => {
+    async (maxPages: number, cutoffDays: number) => {
       if (!selectedApp) return;
 
-      abortRef.current?.();
+      stopPolling();
+      cancelledRef.current = false;
 
       setIsFetching(true);
       setFetchDone(false);
       setReviews([]);
+      setFetchProgress({ page: 0, total_pages: maxPages, reviews_so_far: 0, message: "Starting..." });
 
-      const url = getAppStoreSSEUrl(selectedApp.id, countryCode, maxPages, cutoffDays);
+      let jobId: string;
+      try {
+        const res = await startAppStoreJob(selectedApp.id, countryCode, maxPages, cutoffDays);
+        jobId = res.job_id;
+      } catch {
+        setFetchDone(true);
+        setIsFetching(false);
+        setFetchProgress(null);
+        return;
+      }
 
-      abortRef.current = consumeSSE(url, {
-        onProgress: (data) => setFetchProgress(data),
-        onComplete: (data) => finish(data.reviews),
-        onError: () => {
-          setFetchDone(true);
-          setIsFetching(false);
-          setFetchProgress(null);
-        },
-      });
+      let page = 0;
+      const poll = async () => {
+        if (cancelledRef.current) return;
+        try {
+          const status = await getJobStatus(jobId);
+
+          if (status.status === "error") {
+            finish([]);
+            return;
+          }
+
+          if (status.status === "done") {
+            const result = await getJobResult(jobId);
+            finish(result.reviews);
+            return;
+          }
+
+          // Still running — update progress display
+          page = Math.min(page + 1, maxPages);
+          setFetchProgress({
+            page,
+            total_pages: maxPages,
+            reviews_so_far: status.total,
+            message: `Fetching... (${status.total} reviews so far)`,
+          });
+
+          pollRef.current = setTimeout(poll, POLL_INTERVAL);
+        } catch {
+          pollRef.current = setTimeout(poll, POLL_INTERVAL);
+        }
+      };
+
+      pollRef.current = setTimeout(poll, POLL_INTERVAL);
     },
-    [selectedApp, countryCode, setReviews, setFetchDone, setFetchProgress, setIsFetching, finish]
+    [selectedApp, countryCode, setReviews, setFetchDone, setFetchProgress, setIsFetching, finish, stopPolling]
   );
 
   const cancel = useCallback(() => {
-    abortRef.current?.();
+    stopPolling();
     setIsFetching(false);
     setFetchProgress(null);
-  }, [setIsFetching, setFetchProgress]);
+  }, [stopPolling, setIsFetching, setFetchProgress]);
 
   return { fetch, cancel };
 }
