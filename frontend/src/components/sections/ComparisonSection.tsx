@@ -170,7 +170,7 @@ export function ComparisonSection() {
           apps.apple.com/.../id<code className="bg-bg-secondary px-1 py-0.5 rounded-sm font-mono text-xs">284882215</code>).
         </p>
 
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-[13px] font-medium text-text-primary mb-1.5">
               Country code
@@ -220,7 +220,7 @@ export function ComparisonSection() {
           Apps to Compare
         </p>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
           {apps.map((app, idx) => (
             <CompAppSlot
               key={idx}
@@ -235,18 +235,18 @@ export function ComparisonSection() {
           ))}
         </div>
 
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
           <button
             onClick={addApp}
             disabled={apps.length >= 10}
-            className="py-2 px-4 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.97] rounded-pill transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="py-2 px-4 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.97] rounded-pill transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed self-start sm:self-auto"
           >
             + Add App
           </button>
           <button
             onClick={handleCompare}
             disabled={validIds.length < 2 || isCompFetching}
-            className="py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97] disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:shadow-none"
+            className="w-full sm:w-auto py-2.5 px-6 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97] disabled:bg-[rgba(0,0,0,0.06)] disabled:text-[rgba(0,0,0,0.3)] disabled:cursor-not-allowed disabled:shadow-none"
           >
             {isCompFetching ? "Comparing..." : "Compare Apps"}
           </button>
@@ -315,19 +315,44 @@ function ComparisonResults({
     <div>
       {/* Score overview — focal point */}
       <section className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-[20px] sm:text-[22px] font-semibold text-text-primary tracking-tight">
             Score Overview
           </h3>
           <button
             onClick={onDownload}
-            className="py-2 px-5 text-xs font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
+            className="shrink-0 py-2 px-4 sm:px-5 text-xs font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
           >
-            Download Excel
+            Download
           </button>
         </div>
 
-        <div className="rounded-md overflow-hidden" style={{ boxShadow: "var(--shadow-sm)" }}>
+        {/* Mobile: stacked cards. Desktop: table */}
+        <div className="sm:hidden space-y-3">
+          {summaryData.map((s, i) => (
+            <div key={s.aid} className="rounded-xl border border-border bg-bg-primary p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <p className="text-[14px] font-semibold text-text-primary truncate">{s.name}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Reviews", value: s.total.toLocaleString() },
+                  { label: "Avg Rating", value: `${s.avg.toFixed(1)} ★` },
+                  { label: "Positive", value: `${s.posPct.toFixed(0)}%`, color: "text-[#34C759]" },
+                  { label: "Negative", value: `${s.negPct.toFixed(0)}%`, color: "text-[#FF3B30]" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="bg-bg-secondary rounded-lg px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-0.5">{label}</p>
+                    <p className={`text-[14px] font-semibold tabular-nums ${color ?? "text-text-primary"}`}>{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden sm:block rounded-md overflow-hidden" style={{ boxShadow: "var(--shadow-sm)" }}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -383,7 +408,7 @@ function ComparisonResults({
       </section>
 
       {/* Head-to-head — wrapped in bg-bg-secondary for visual separation */}
-      <section className="bg-bg-secondary rounded-lg p-6 mb-10">
+      <section className="bg-bg-secondary rounded-lg p-4 sm:p-6 mb-10">
         <HeadToHead compData={compData} compNames={compNames} />
       </section>
     </div>
@@ -441,7 +466,7 @@ function HeadToHead({
         Top recurring themes extracted from 1-2 star and 4-5 star reviews for each app.
       </p>
 
-      <div className={`grid gap-6`} style={{ gridTemplateColumns: `repeat(${Math.min(appList.length, 3)}, 1fr)` }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {appList.map(([aid, reviews]) => {
           const name = compNames[aid] || aid;
           const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
