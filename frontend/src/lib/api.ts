@@ -53,6 +53,12 @@ export async function searchApps(query: string, country: string) {
   >(`/api/apps/search?query=${encodeURIComponent(query)}&country=${encodeURIComponent(country)}`);
 }
 
+export async function searchTrustpilot(query: string) {
+  return fetchJSON<{ name: string; domain: string; logo: string; stars: number; reviews: number }[]>(
+    `/api/apps/trustpilot/search?query=${encodeURIComponent(query)}`
+  );
+}
+
 export async function lookupApp(appId: string, country: string) {
   return fetchJSON<{ id: string; name: string }>(
     `/api/apps/${appId}?country=${encodeURIComponent(country)}`
