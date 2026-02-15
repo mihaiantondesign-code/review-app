@@ -75,7 +75,7 @@ export function InsightsPanel({ reviews, source = "appstore" }: InsightsPanelPro
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <MetricCard label="Average Rating" value={`${avgRating.toFixed(1)} ★`} />
         <MetricCard label="Positive (4-5★)" value={`${positivePct.toFixed(0)}%`} />
         <MetricCard label="Negative (1-2★)" value={`${negativePct.toFixed(0)}%`} />
