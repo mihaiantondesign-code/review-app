@@ -1,16 +1,17 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { MetricCard } from "@/components/shared/MetricCard";
 import { StarRating } from "@/components/shared/StarRating";
-import { ReviewsTable } from "@/components/shared/ReviewsTable";
-import { RatingDistributionChart } from "@/components/shared/RatingDistributionChart";
 import { InsightsPanel } from "@/components/insights/InsightsPanel";
 import { VersionInsights } from "@/components/insights/VersionInsights";
+import { analyzeSentiment } from "@/lib/api";
 import { exportExcel } from "@/lib/api";
-import { downloadBlob } from "@/lib/utils";
+import { downloadBlob, formatDate } from "@/lib/utils";
+import type { Review, SentimentResult } from "@/types";
+
+// ─── Loading card ────────────────────────────────────────────────────────────
 
 function FetchingCard() {
   return (
@@ -48,9 +49,293 @@ function FetchingCard() {
   );
 }
 
+// ─── Stars breakdown card ─────────────────────────────────────────────────────
+
+function StarsBreakdownCard({ counts, total }: { counts: { rating: number; count: number }[]; total: number }) {
+  const max = Math.max(...counts.map((c) => c.count), 1);
+  return (
+    <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2.5" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-1">Stars Breakdown</p>
+      {[5, 4, 3, 2, 1].map((s) => {
+        const c = counts.find((x) => x.rating === s)!;
+        const pct = total > 0 ? (c.count / total) * 100 : 0;
+        const barPct = (c.count / max) * 100;
+        const color = s >= 4 ? "#34C759" : s === 3 ? "#FF9500" : "#FF3B30";
+        return (
+          <div key={s} className="flex items-center gap-2">
+            <span className="text-[11px] text-text-secondary w-4 shrink-0">{s}★</span>
+            <div className="flex-1 h-1.5 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${barPct}%`, backgroundColor: color }} />
+            </div>
+            <span className="text-[11px] tabular-nums text-text-tertiary w-10 text-right shrink-0">
+              {c.count.toLocaleString()}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Sentiment breakdown card ─────────────────────────────────────────────────
+
+function SentimentCard({ reviews }: { reviews: Review[] }) {
+  const [sentiment, setSentiment] = useState<SentimentResult | null>(null);
+
+  useEffect(() => {
+    if (reviews.length === 0) return;
+    const texts = reviews.map((r) => `${r.title} ${r.review}`);
+    analyzeSentiment(texts).then(setSentiment).catch(() => {});
+  }, [reviews]);
+
+  const total = reviews.length;
+
+  // Derive sentiment buckets from rating distribution as proxy when API loads
+  const pos = reviews.filter((r) => r.rating >= 4).length;
+  const neg = reviews.filter((r) => r.rating <= 2).length;
+  const neu = reviews.filter((r) => r.rating === 3).length;
+
+  const buckets = sentiment
+    ? [
+        { label: "Positive", count: sentiment.positive, color: "#34C759" },
+        { label: "Negative", count: sentiment.negative, color: "#FF3B30" },
+      ]
+    : [
+        { label: "Positive", count: pos, color: "#34C759" },
+        { label: "Neutral", count: neu, color: "#8E8E93" },
+        { label: "Negative", count: neg, color: "#FF3B30" },
+      ];
+
+  const maxCount = Math.max(...buckets.map((b) => b.count), 1);
+
+  return (
+    <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2.5" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-1">Sentiment Breakdown</p>
+      {buckets.map((b) => {
+        const pct = total > 0 ? Math.round((b.count / total) * 100) : 0;
+        const barPct = (b.count / maxCount) * 100;
+        return (
+          <div key={b.label} className="flex items-center gap-2">
+            <span className="text-[11px] text-text-secondary w-14 shrink-0">{b.label}</span>
+            <div className="flex-1 h-1.5 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${barPct}%`, backgroundColor: b.color }} />
+            </div>
+            <span className="text-[11px] tabular-nums text-text-tertiary w-16 text-right shrink-0">
+              {b.count.toLocaleString()} <span className="opacity-60">{pct}%</span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Individual review card ───────────────────────────────────────────────────
+
+function ReviewCard({ review }: { review: Review }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = review.review.length > 220;
+  const text = !isLong || expanded ? review.review : review.review.slice(0, 220) + "…";
+
+  const sentimentLabel = review.rating >= 4 ? "Positive" : review.rating <= 2 ? "Negative" : "Neutral";
+  const sentimentColor = review.rating >= 4 ? "text-[#34C759]" : review.rating <= 2 ? "text-[#FF3B30]" : "text-text-secondary";
+
+  return (
+    <div className="bg-bg-primary rounded-xl border border-border p-5" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="flex gap-5">
+        {/* Left — main content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <StarRating rating={review.rating} size="sm" />
+          </div>
+          <h4 className="text-[14px] font-semibold text-text-primary mb-1 leading-snug">{review.title || "(no title)"}</h4>
+          <p className="text-[13px] text-text-secondary leading-relaxed">
+            {text}
+            {isLong && (
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="ml-1 text-accent text-[12px] font-medium hover:underline"
+              >
+                {expanded ? "less" : "more"}
+              </button>
+            )}
+          </p>
+        </div>
+
+        {/* Right — metadata sidebar */}
+        <div className="shrink-0 w-[148px] space-y-1.5 border-l border-border pl-4">
+          {[
+            { label: "Published", value: formatDate(review.date) },
+            { label: "Author", value: review.author || "—" },
+            { label: "Version", value: review.version || "—" },
+            { label: "Sentiment", value: sentimentLabel, valueClass: sentimentColor },
+          ].map(({ label, value, valueClass }) => (
+            <div key={label}>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">{label}</p>
+              <p className={`text-[12px] font-medium truncate ${valueClass ?? "text-text-primary"}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Review listings with date grouping ──────────────────────────────────────
+
+function ReviewListings({ reviews, onDownload }: { reviews: Review[]; onDownload: () => void }) {
+  const [ratingFilter, setRatingFilter] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    let r = reviews.filter((rev) => ratingFilter.has(rev.rating));
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      r = r.filter(
+        (rev) =>
+          rev.title.toLowerCase().includes(q) ||
+          rev.review.toLowerCase().includes(q) ||
+          rev.author.toLowerCase().includes(q)
+      );
+    }
+    return r;
+  }, [reviews, ratingFilter, search]);
+
+  // Group by day
+  const grouped = useMemo(() => {
+    const map = new Map<string, Review[]>();
+    for (const rev of filtered) {
+      const day = rev.date.slice(0, 10);
+      if (!map.has(day)) map.set(day, []);
+      map.get(day)!.push(rev);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
+  }, [filtered]);
+
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
+  // All reviews flattened, paginated
+  const paginatedAll = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Rebuild groups for current page
+  const pageGrouped = useMemo(() => {
+    const map = new Map<string, Review[]>();
+    for (const rev of paginatedAll) {
+      const day = rev.date.slice(0, 10);
+      if (!map.has(day)) map.set(day, []);
+      map.get(day)!.push(rev);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
+  }, [paginatedAll]);
+
+  const toggleRating = (r: number) => {
+    setRatingFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(r)) next.delete(r); else next.add(r);
+      return next;
+    });
+    setPage(1);
+  };
+
+  function friendlyDate(iso: string) {
+    return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  }
+
+  return (
+    <section>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[18px] font-semibold text-text-primary tracking-tight">Review Listings</h3>
+        <button
+          onClick={onDownload}
+          className="flex items-center gap-1.5 py-2 px-4 text-xs font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
+        >
+          Export
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((r) => (
+            <button
+              key={r}
+              onClick={() => toggleRating(r)}
+              className={`px-2.5 py-1.5 text-xs font-medium rounded-pill transition-all duration-150 ${
+                ratingFilter.has(r)
+                  ? "bg-text-primary text-white shadow-sm"
+                  : "bg-[rgba(0,0,0,0.04)] text-text-tertiary hover:bg-[rgba(0,0,0,0.07)]"
+              }`}
+            >
+              {r}★
+            </button>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          placeholder="Search reviews…"
+          className="flex-1 min-w-[180px] max-w-[260px] px-3 py-1.5 text-xs border border-border-strong rounded-pill bg-bg-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all"
+        />
+        <span className="text-xs text-text-tertiary tabular-nums ml-auto">{filtered.length.toLocaleString()} reviews</span>
+      </div>
+
+      {/* Groups */}
+      <div className="space-y-6">
+        {pageGrouped.map(([day, dayReviews]) => (
+          <div key={day}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-3">
+              {friendlyDate(day)}
+            </p>
+            <div className="space-y-3">
+              {dayReviews.map((rev, i) => (
+                <ReviewCard key={`${day}-${i}`} review={rev} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 py-2 text-xs font-medium rounded-pill bg-[rgba(0,0,0,0.03)] text-text-secondary hover:bg-[rgba(0,0,0,0.06)] active:scale-[0.97] disabled:opacity-25 disabled:pointer-events-none transition-all"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-4 py-2 text-xs font-medium rounded-pill bg-[rgba(0,0,0,0.03)] text-text-secondary hover:bg-[rgba(0,0,0,0.06)] active:scale-[0.97] disabled:opacity-25 disabled:pointer-events-none transition-all"
+            >
+              Next
+            </button>
+          </div>
+          <span className="text-xs text-text-tertiary tabular-nums">Page {page} of {totalPages}</span>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Main section ─────────────────────────────────────────────────────────────
+
 export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
-  const { reviews, fetchDone, fetchProgress, isFetching } = useAppStore();
+  const { reviews, fetchDone, isFetching, selectedApps } = useAppStore();
   const hasDownloaded = useRef(false);
+  const [activeTab, setActiveTab] = useState<"summary" | "trend" | "stars">("summary");
+
+  const selectedApp = selectedApps[0] ?? null;
 
   const stats = useMemo(() => {
     if (reviews.length === 0) return null;
@@ -59,7 +344,6 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
     const counts = [1, 2, 3, 4, 5].map((r) => ({
       rating: r,
       count: reviews.filter((rev) => rev.rating === r).length,
-      pct: (reviews.filter((rev) => rev.rating === r).length / total) * 100,
     }));
     return { total, avg, counts };
   }, [reviews]);
@@ -68,7 +352,6 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
     try {
       const blob = await exportExcel(reviews);
       downloadBlob(blob, "app_reviews.xlsx");
-      // Trigger feedback modal on first download
       if (!hasDownloaded.current) {
         hasDownloaded.current = true;
         onDownload?.();
@@ -78,9 +361,7 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
     }
   };
 
-  if (isFetching) {
-    return <FetchingCard />;
-  }
+  if (isFetching) return <FetchingCard />;
 
   if (reviews.length === 0) {
     if (fetchDone) {
@@ -104,65 +385,99 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
 
   return (
     <div>
-      {/* Chapter 1: Score overview — the focal point */}
+      {/* ── Header ── */}
+      <div className="mb-6">
+        {selectedApp && (
+          <div className="flex items-center gap-3 mb-3">
+            {selectedApp.icon && (
+              <img src={selectedApp.icon} alt="" className="w-10 h-10 rounded-xl shadow-sm shrink-0" />
+            )}
+            <div>
+              <h1 className="text-[22px] font-bold text-text-primary tracking-tight leading-tight">{selectedApp.name}</h1>
+              <p className="text-[13px] text-text-secondary">
+                Reviews — view, search and get stats on reviews with text.{" "}
+                <a href="#" className="text-accent hover:underline">Learn more →</a>
+              </p>
+            </div>
+          </div>
+        )}
+        {!selectedApp && (
+          <>
+            <h1 className="text-[22px] font-bold text-text-primary tracking-tight mb-1">Reviews</h1>
+            <p className="text-[13px] text-text-secondary">
+              View, search and get stats on reviews with text.{" "}
+              <a href="#" className="text-accent hover:underline">Learn more →</a>
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* ── 4 stat cards ── */}
       {stats && (
-        <section className="mb-10">
-          <div className="flex items-baseline gap-3 mb-1">
-            <span className="text-4xl font-bold text-text-primary tracking-tight">
-              {stats.avg.toFixed(1)}
-            </span>
-            <StarRating rating={stats.avg} size="lg" />
-            <span className="text-sm text-text-tertiary">/ 5</span>
-          </div>
-          <p className="text-[13px] text-text-secondary mb-5">
-            Based on <strong>{stats.total}</strong> reviews
-          </p>
-
-          <div className="grid grid-cols-5 gap-3">
-            {stats.counts.map((c) => (
-              <MetricCard
-                key={c.rating}
-                label={"★".repeat(c.rating)}
-                value={`${c.count}`}
-                help={`${c.pct.toFixed(1)}% of all reviews`}
-              />
-            ))}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {/* 1. Total reviews */}
+          <div className="bg-bg-primary rounded-xl border border-border p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-2">Reviews</p>
+            <p className="text-[28px] font-bold text-text-primary leading-none tabular-nums">{stats.total.toLocaleString()}</p>
+            <p className="text-[11px] text-text-secondary mt-1">For selected range</p>
           </div>
 
-          <div className="mt-6">
-            <RatingDistributionChart reviews={reviews} />
+          {/* 2. Avg stars */}
+          <div className="bg-bg-primary rounded-xl border border-border p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-2">Avg Stars</p>
+            <p className="text-[28px] font-bold text-text-primary leading-none tabular-nums">{stats.avg.toFixed(1)}</p>
+            <div className="mt-1">
+              <StarRating rating={stats.avg} size="sm" />
+            </div>
           </div>
-        </section>
+
+          {/* 3. Stars breakdown */}
+          <StarsBreakdownCard counts={stats.counts} total={stats.total} />
+
+          {/* 4. Sentiment breakdown */}
+          <SentimentCard reviews={reviews} />
+        </div>
       )}
 
-      {/* Chapter 2: Reviews data */}
-      <section className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">
-            All Reviews
-          </h3>
+      {/* ── Tab nav ── */}
+      <div className="flex gap-0 border-b border-border mb-6">
+        {(["summary", "trend", "stars"] as const).map((tab) => (
           <button
-            onClick={handleDownload}
-            className="py-2 px-5 text-xs font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2.5 text-[13px] font-medium capitalize transition-all border-b-2 -mb-px ${
+              activeTab === tab
+                ? "border-text-primary text-text-primary"
+                : "border-transparent text-text-secondary hover:text-text-primary"
+            }`}
           >
-            Download Excel
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
+        ))}
+      </div>
+
+      {/* ── Tab content ── */}
+      {activeTab === "summary" && (
+        <div className="space-y-10">
+          <ReviewListings reviews={reviews} onDownload={handleDownload} />
         </div>
-        <ReviewsTable reviews={reviews} />
-      </section>
+      )}
 
-      {/* Chapter 3: Insights — opens up into breathing room */}
-      <section className="bg-bg-secondary rounded-lg p-6 mb-10">
-        <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-6">
-          Insights
-        </h3>
-        <InsightsPanel reviews={reviews} />
-      </section>
+      {activeTab === "trend" && (
+        <div className="space-y-10">
+          <section className="bg-bg-secondary rounded-lg p-6">
+            <h3 className="text-[18px] font-semibold text-text-primary tracking-tight mb-6">Insights</h3>
+            <InsightsPanel reviews={reviews} />
+          </section>
+          <VersionInsights reviews={reviews} />
+        </div>
+      )}
 
-      {/* Chapter 4: Version data */}
-      <section>
-        <VersionInsights reviews={reviews} />
-      </section>
+      {activeTab === "stars" && (
+        <div className="space-y-10">
+          <VersionInsights reviews={reviews} />
+        </div>
+      )}
     </div>
   );
 }
