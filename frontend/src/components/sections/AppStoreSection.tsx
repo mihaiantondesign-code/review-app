@@ -37,7 +37,7 @@ export function AppStoreSection() {
     }
   };
 
-  if (isFetching && fetchProgress) {
+  if (isFetching && fetchProgress && reviews.length === 0) {
     return <ProgressOverlay progress={fetchProgress} />;
   }
 
@@ -63,6 +63,21 @@ export function AppStoreSection() {
 
   return (
     <div>
+      {/* Inline progress bar shown while still fetching more pages */}
+      {isFetching && fetchProgress && (
+        <div className="mb-6 px-4 py-3 bg-bg-secondary rounded-lg flex items-center gap-3">
+          <div className="flex-1 h-1 bg-border rounded-full overflow-hidden">
+            <div
+              className="h-full bg-text-primary rounded-full transition-all duration-300"
+              style={{ width: `${(fetchProgress.page / fetchProgress.total_pages) * 100}%` }}
+            />
+          </div>
+          <span className="text-xs text-text-tertiary whitespace-nowrap">
+            {fetchProgress.message}
+          </span>
+        </div>
+      )}
+
       {/* Chapter 1: Score overview — the focal point */}
       {stats && (
         <section className="mb-10">
