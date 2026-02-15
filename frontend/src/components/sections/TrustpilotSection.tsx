@@ -92,13 +92,13 @@ function TrustpilotSearchPicker({ selected, onSelect, onClear }: {
 
   if (selected) {
     return (
-      <div className="flex items-center gap-3 px-3 py-2.5 border border-border rounded-sm bg-bg-primary">
-        {selected.logo && <img src={selected.logo} alt="" className="w-7 h-7 rounded-sm shrink-0 object-contain" />}
+      <div className="flex items-center gap-3 px-3 py-3 border border-border rounded-xl bg-bg-primary">
+        {selected.logo && <img src={selected.logo} alt="" className="w-9 h-9 rounded-lg shrink-0 object-contain" />}
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-text-primary truncate">{selected.name}</p>
-          <p className="text-[11px] text-text-tertiary truncate">{selected.domain}</p>
+          <p className="text-[15px] font-semibold text-text-primary truncate">{selected.name}</p>
+          <p className="text-sm text-text-tertiary truncate">{selected.domain}</p>
         </div>
-        <button onClick={onClear} className="text-xs text-text-secondary hover:text-text-primary px-2 py-1 rounded-pill hover:bg-[rgba(0,0,0,0.04)] transition-colors shrink-0">
+        <button onClick={onClear} className="text-sm font-medium text-text-secondary hover:text-text-primary px-3 py-2 rounded-xl hover:bg-[rgba(0,0,0,0.05)] transition-colors shrink-0">
           Change
         </button>
       </div>
@@ -111,16 +111,16 @@ function TrustpilotSearchPicker({ selected, onSelect, onClear }: {
         type="text" value={query}
         onFocus={() => setOpen(true)}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-        placeholder="Search company name or paste trustpilot.com/review/… URL"
-        className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+        placeholder="Search company or paste URL…"
+        className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
       />
       {open && query.trim() && (
         <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-bg-primary border border-border rounded-sm shadow-lg overflow-hidden">
-          {loading && <p className="px-3 py-3 text-xs text-text-tertiary">Searching…</p>}
+          {loading && <p className="px-4 py-3 text-sm text-text-tertiary">Searching…</p>}
           {!loading && results.length === 0 && (
-            <div className="px-3 py-3">
-              <p className="text-xs text-text-tertiary mb-1">No results found.</p>
-              <p className="text-xs text-text-secondary">Try pasting the full URL: <span className="font-mono">trustpilot.com/review/company.com</span></p>
+            <div className="px-4 py-3">
+              <p className="text-sm text-text-tertiary mb-1">No results found.</p>
+              <p className="text-sm text-text-secondary">Try pasting the full URL: <span className="font-mono text-xs">trustpilot.com/review/company.com</span></p>
             </div>
           )}
           {results.map((r) => (
@@ -188,13 +188,13 @@ export function TrustpilotSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-[13px] font-medium text-text-primary mb-1.5">Company</label>
+            <label className="block text-[15px] font-semibold text-text-primary mb-2">Company</label>
             <TrustpilotSearchPicker selected={selected} onSelect={setSelected} onClear={() => setSelected(null)} />
           </div>
           <div>
-            <label className="block text-[13px] font-medium text-text-primary mb-1.5">Language</label>
+            <label className="block text-[15px] font-semibold text-text-primary mb-2">Language</label>
             <select value={language} onChange={(e) => setLanguage(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all">
+              className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all">
               {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
           </div>
@@ -203,15 +203,15 @@ export function TrustpilotSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[13px] font-medium text-text-primary">Months back</label>
-              <span className="text-[13px] font-bold text-text-primary tabular-nums">{months}</span>
+              <label className="text-[15px] font-semibold text-text-primary">Months back</label>
+              <span className="text-[22px] font-bold text-text-primary tabular-nums">{months}</span>
             </div>
-            <input type="range" min={1} max={24} value={months} onChange={(e) => setMonths(Number(e.target.value))} className="w-full accent-text-primary mt-1" />
+            <input type="range" min={1} max={24} value={months} onChange={(e) => setMonths(Number(e.target.value))} className="w-full accent-text-primary mt-1 h-2" />
           </div>
           <div>
-            <label className="block text-[13px] font-medium text-text-primary mb-1.5">Max pages</label>
+            <label className="block text-[15px] font-semibold text-text-primary mb-2">Max pages</label>
             <input type="number" min={1} max={50} value={maxPages} onChange={(e) => setMaxPages(Number(e.target.value))}
-              className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all" />
+              className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all" />
           </div>
         </div>
 
