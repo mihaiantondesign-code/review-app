@@ -6,13 +6,15 @@ import { AdjustedRatingCard } from "./AdjustedRatingCard";
 import { SentimentBreakdown } from "./SentimentBreakdown";
 import { ThemesList } from "./ThemesList";
 import { analyzeSentiment, analyzeAdjustedMetrics, analyzeThemes } from "@/lib/api";
+import { ReviewCategories } from "./ReviewCategories";
 import type { Review, SentimentResult, AdjustedMetrics, Theme } from "@/types";
 
 interface InsightsPanelProps {
   reviews: Review[];
+  source?: "appstore" | "trustpilot";
 }
 
-export function InsightsPanel({ reviews }: InsightsPanelProps) {
+export function InsightsPanel({ reviews, source = "appstore" }: InsightsPanelProps) {
   const [sentiment, setSentiment] = useState<SentimentResult | null>(null);
   const [adjustedMetrics, setAdjustedMetrics] = useState<AdjustedMetrics | null>(null);
   const [problems, setProblems] = useState<Theme[]>([]);
@@ -88,7 +90,14 @@ export function InsightsPanel({ reviews }: InsightsPanelProps) {
 
       <hr className="border-t border-border" />
 
-      {adjustedMetrics && adjustedMetrics.original_count > 0 && (
+      {source === "trustpilot" && (
+        <>
+          <ReviewCategories reviews={reviews} />
+          <hr className="border-t border-border" />
+        </>
+      )}
+
+      {source === "appstore" && adjustedMetrics && adjustedMetrics.original_count > 0 && (
         <>
           <AdjustedRatingCard metrics={adjustedMetrics} />
           <hr className="border-t border-border" />

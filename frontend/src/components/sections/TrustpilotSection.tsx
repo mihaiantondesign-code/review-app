@@ -253,7 +253,7 @@ export function TrustpilotSection() {
 
           <section className="bg-bg-secondary rounded-lg p-6 mb-8">
             <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-6">Insights</h3>
-            <InsightsPanel reviews={trustpilotReviews} />
+            <InsightsPanel reviews={trustpilotReviews} source="trustpilot" />
           </section>
 
           <section>
