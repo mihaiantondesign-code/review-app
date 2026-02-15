@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { searchApps, getAppStoreSSEUrl } from "@/lib/api";
-import { consumeSSE } from "@/lib/sse";
+import { searchApps } from "@/lib/api";
 import { AppSearchResults } from "@/components/shared/AppSearchResults";
 import { AppCard } from "@/components/shared/AppCard";
+import { useFetchReviews } from "@/hooks/useFetchReviews";
 import type { AppSearchResult } from "@/types";
 
 export function Sidebar() {
@@ -16,19 +16,16 @@ export function Sidebar() {
     setCountryCode,
     fetchMode,
     setFetchMode,
-    setReviews,
-    setFetchDone,
-    setFetchProgress,
-    setIsFetching,
     isFetching,
   } = useAppStore();
+
+  const { fetch: fetchReviews } = useFetchReviews();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<AppSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [months, setMonths] = useState(12);
   const [maxPages, setMaxPages] = useState(10);
-  const abortRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -66,32 +63,10 @@ export function Sidebar() {
 
   const handleFetch = useCallback(() => {
     if (!selectedApp) return;
-
     const cutoffDays = fetchMode === "time" ? months * 30 : 365 * 10;
     const pages = fetchMode === "pages" ? maxPages : 50;
-
-    setIsFetching(true);
-    setFetchDone(false);
-    setReviews([]);
-
-    const url = getAppStoreSSEUrl(selectedApp.id, countryCode, pages, cutoffDays);
-
-    abortRef.current = consumeSSE(url, {
-      onProgress: (data) => setFetchProgress(data),
-      onComplete: (data) => {
-        setReviews(data.reviews);
-        setFetchDone(true);
-        setIsFetching(false);
-        setFetchProgress(null);
-      },
-      onError: (data) => {
-        console.error("SSE error:", data.message);
-        setFetchDone(true);
-        setIsFetching(false);
-        setFetchProgress(null);
-      },
-    });
-  }, [selectedApp, countryCode, fetchMode, months, maxPages, setIsFetching, setFetchDone, setReviews, setFetchProgress]);
+    fetchReviews(pages, cutoffDays);
+  }, [selectedApp, fetchMode, months, maxPages, fetchReviews]);
 
   return (
     <aside className="w-[300px] shrink-0 bg-bg-secondary border-r border-border h-screen overflow-y-auto">

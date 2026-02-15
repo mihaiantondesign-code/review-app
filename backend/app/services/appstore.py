@@ -103,9 +103,13 @@ def fetch_reviews_simple(app_id: str, country: str, max_pages: int, cutoff_date:
     return all_reviews
 
 
+BATCH_SIZE = 3  # Fetch N pages then immediately flush chunk to keep connection alive
+
+
 def fetch_reviews_generator(app_id: str, country: str, max_pages: int, cutoff_date: datetime):
     """Generator that yields (event_type, data) tuples for SSE streaming."""
     all_reviews = []
+    batch_reviews = []
 
     for page in range(1, max_pages + 1):
         yield ("progress", {
@@ -117,11 +121,11 @@ def fetch_reviews_generator(app_id: str, country: str, max_pages: int, cutoff_da
 
         url = build_url(country, app_id, page)
         try:
-            response = requests.get(url, timeout=15)
+            response = requests.get(url, timeout=10)
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.RequestException:
-            # Page doesn't exist or network error — stop fetching but still return what we have
+            # Page doesn't exist or network error — flush what we have and stop
             break
         except ValueError:
             break
@@ -132,7 +136,6 @@ def fetch_reviews_generator(app_id: str, country: str, max_pages: int, cutoff_da
         if not entries:
             break
 
-        page_reviews = []
         all_too_old = True
         for entry in entries:
             parsed = parse_entry(entry)
@@ -140,15 +143,20 @@ def fetch_reviews_generator(app_id: str, country: str, max_pages: int, cutoff_da
                 if parsed["date"] >= cutoff_date:
                     parsed["date"] = parsed["date"].isoformat()
                     all_reviews.append(parsed)
-                    page_reviews.append(parsed)
+                    batch_reviews.append(parsed)
                     all_too_old = False
 
-        # Stream this page's reviews immediately so frontend gets them incrementally
-        if page_reviews:
-            yield ("reviews_chunk", {"reviews": page_reviews})
+        # Flush batch every BATCH_SIZE pages to keep the connection alive
+        if page % BATCH_SIZE == 0 and batch_reviews:
+            yield ("reviews_chunk", {"reviews": batch_reviews})
+            batch_reviews = []
 
         if all_too_old and page > 1:
             break
+
+    # Flush any remaining reviews in the last partial batch
+    if batch_reviews:
+        yield ("reviews_chunk", {"reviews": batch_reviews})
 
     yield ("complete", {
         "reviews": all_reviews,
