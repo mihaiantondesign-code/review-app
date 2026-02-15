@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { MetricCard } from "@/components/shared/MetricCard";
@@ -13,8 +13,9 @@ import { VersionInsights } from "@/components/insights/VersionInsights";
 import { exportExcel } from "@/lib/api";
 import { downloadBlob } from "@/lib/utils";
 
-export function AppStoreSection() {
+export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
   const { reviews, fetchDone, fetchProgress, isFetching } = useAppStore();
+  const hasDownloaded = useRef(false);
 
   const stats = useMemo(() => {
     if (reviews.length === 0) return null;
@@ -32,6 +33,11 @@ export function AppStoreSection() {
     try {
       const blob = await exportExcel(reviews);
       downloadBlob(blob, "app_reviews.xlsx");
+      // Trigger feedback modal on first download
+      if (!hasDownloaded.current) {
+        hasDownloaded.current = true;
+        onDownload?.();
+      }
     } catch (err) {
       console.error("Download error:", err);
     }
