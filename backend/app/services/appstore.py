@@ -132,6 +132,7 @@ def fetch_reviews_generator(app_id: str, country: str, max_pages: int, cutoff_da
         if not entries:
             break
 
+        page_reviews = []
         all_too_old = True
         for entry in entries:
             parsed = parse_entry(entry)
@@ -139,7 +140,12 @@ def fetch_reviews_generator(app_id: str, country: str, max_pages: int, cutoff_da
                 if parsed["date"] >= cutoff_date:
                     parsed["date"] = parsed["date"].isoformat()
                     all_reviews.append(parsed)
+                    page_reviews.append(parsed)
                     all_too_old = False
+
+        # Stream this page's reviews immediately so frontend gets them incrementally
+        if page_reviews:
+            yield ("reviews_chunk", {"reviews": page_reviews})
 
         if all_too_old and page > 1:
             break

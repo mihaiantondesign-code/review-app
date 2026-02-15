@@ -1,3 +1,12 @@
+type Review = {
+  date: string;
+  rating: number;
+  title: string;
+  review: string;
+  author: string;
+  version: string;
+};
+
 export interface SSECallbacks {
   onProgress?: (data: {
     page: number;
@@ -11,15 +20,9 @@ export interface SSECallbacks {
     stars: number;
     totalReviews: number;
   }) => void;
+  onReviewsChunk?: (data: { reviews: Review[] }) => void;
   onComplete?: (data: {
-    reviews: {
-      date: string;
-      rating: number;
-      title: string;
-      review: string;
-      author: string;
-      version: string;
-    }[];
+    reviews: Review[];
     total: number;
     business_info?: {
       name: string;
@@ -68,6 +71,9 @@ export function consumeSSE(url: string, callbacks: SSECallbacks): () => void {
                   break;
                 case "business_info":
                   callbacks.onBusinessInfo?.(data);
+                  break;
+                case "reviews_chunk":
+                  callbacks.onReviewsChunk?.(data);
                   break;
                 case "complete":
                   callbacks.onComplete?.(data);
