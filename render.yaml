@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: reviews-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: ALLOWED_ORIGINS
+        sync: false   # set manually in Render dashboard to your Vercel URL
