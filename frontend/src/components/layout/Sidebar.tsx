@@ -33,23 +33,24 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
 
   return (
     <aside className="w-[300px] shrink-0 bg-bg-secondary border-r border-border h-[100dvh] overflow-y-auto">
-      {/* Mobile drawer header with close button */}
-      {onClose && (
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <span className="text-[13px] font-semibold text-text-primary">Filters</span>
+      {/* Header — brand title + optional close button (mobile drawer) */}
+      <div className="flex items-center justify-between px-5 pt-6 pb-4">
+        <h1 className="text-[28px] font-bold text-text-primary tracking-tight leading-none">App Reviewer</h1>
+        {onClose && (
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[rgba(0,0,0,0.06)] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[rgba(0,0,0,0.06)] transition-colors shrink-0 ml-2"
             aria-label="Close"
           >
             <svg className="w-4 h-4 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-        </div>
-      )}
+        )}
+      </div>
+
       {/* App Search */}
-      <div className="px-5 pt-6 pb-4">
+      <div className="px-5 pb-4">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-4">
           App Store
         </h2>
