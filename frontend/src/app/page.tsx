@@ -7,6 +7,7 @@ import { AppStoreSection } from "@/components/sections/AppStoreSection";
 import { TrustpilotSection } from "@/components/sections/TrustpilotSection";
 import { ComparisonSection } from "@/components/sections/ComparisonSection";
 import { AppMultiSelectPicker } from "@/components/shared/AppMultiSelectPicker";
+import { CountryField } from "@/components/shared/CountryField";
 import { FeedbackModal, useFeedbackTrigger } from "@/components/shared/FeedbackModal";
 import { useAppStore } from "@/store/useAppStore";
 import { useFetchReviews } from "@/hooks/useFetchReviews";
@@ -50,13 +51,7 @@ function MobileSearchScreen({ onDone }: { onDone: () => void }) {
       <div className="space-y-6 flex-1">
         <div>
           <label className="block text-base font-semibold text-text-primary mb-2">Country</label>
-          <input
-            type="text"
-            value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
-            placeholder="e.g. it, us, gb"
-            className="w-full px-4 py-3.5 min-h-[44px] text-base border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
-          />
+          <CountryField value={countryCode} onChange={setCountryCode} size="lg" />
         </div>
 
         <div>
@@ -127,7 +122,7 @@ function MobileSearchScreen({ onDone }: { onDone: () => void }) {
 // ─── Main layout ──────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const { activeSection, reviews, fetchDone, isFetching } = useAppStore();
+  const { activeSection, fetchDone, isFetching } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
   // Controls whether mobile search screen is shown (always true before first fetch)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(true);
@@ -136,9 +131,10 @@ export default function Home() {
   const showModal = () => setModalOpen(true);
   useFeedbackTrigger(showModal, hasFired);
 
-  // Show search screen on mobile when: explicitly opened, OR no data yet
+  // Show search screen on mobile when explicitly opened (initial load or "Change app" tap)
+  // Remove reviews.length guard so it works even after a fetch
   const showMobileSearch =
-    mobileSearchOpen && activeSection === "appstore" && reviews.length === 0 && !isFetching;
+    mobileSearchOpen && activeSection === "appstore" && !isFetching;
 
   return (
     <div className="flex h-[100dvh] overflow-hidden">
