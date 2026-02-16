@@ -109,7 +109,7 @@ export function AppMultiSelectPicker({
           // When open: show the live query (empty = show placeholder with current name)
           // When closed: always empty (overlay shows selected name instead)
           value={open ? query : ""}
-          placeholder={open && triggerLabel ? triggerLabel : placeholder}
+          placeholder={open ? (triggerLabel || placeholder) : (!triggerLabel ? placeholder : "")}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
             const val = e.target.value;
