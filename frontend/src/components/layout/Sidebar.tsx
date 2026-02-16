@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { AppMultiSelectPicker } from "@/components/shared/AppMultiSelectPicker";
+import { CountryField } from "@/components/shared/CountryField";
 import { useFetchReviews } from "@/hooks/useFetchReviews";
 
 export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
@@ -56,15 +57,9 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
         </h2>
 
         <label className="block text-[13px] font-medium text-text-primary mb-1.5">
-          Country code
+          Country
         </label>
-        <input
-          type="text"
-          value={countryCode}
-          onChange={(e) => setCountryCode(e.target.value)}
-          className="w-full px-3 py-2.5 min-h-[44px] text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
-          placeholder="e.g. it, us"
-        />
+        <CountryField value={countryCode} onChange={setCountryCode} size="sm" />
 
         <label className="block text-[13px] font-medium text-text-primary mb-1.5 mt-4">
           Source
