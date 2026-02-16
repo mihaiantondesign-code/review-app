@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactElement } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { classifyProblems } from "@/lib/api";
+import { classifyBatch } from "@/lib/classifier";
 import { ProblemChip, CATEGORY_CONFIG } from "@/components/shared/ProblemChip";
 import { StarRating } from "@/components/shared/StarRating";
 import { formatDate } from "@/lib/utils";
@@ -51,8 +51,6 @@ const CATEGORY_ICONS: Record<ProblemCategory, ReactElement> = {
     </svg>
   ),
 };
-
-const BATCH_SIZE = 50;
 
 // ─── Review card ─────────────────────────────────────────────────────────────
 
@@ -275,79 +273,25 @@ function SummaryBar({
 // ─── Main BacklogSection ──────────────────────────────────────────────────────
 
 export function BacklogSection() {
-  const { reviews, classifiedReviews, setClassifiedReviews, isClassifying, setIsClassifying } = useAppStore();
+  const { reviews } = useAppStore();
   const [activeCategories, setActiveCategories] = useState<Set<ProblemCategory>>(new Set());
   const reviewListRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  // ─── Classify reviews in batches when reviews change ───────────────────────
-  useEffect(() => {
-    if (reviews.length === 0) {
-      setClassifiedReviews([]);
-      return;
-    }
-
-    // Seed all reviews as pending
-    const pending: ClassifiedReview[] = reviews.map((r) => ({
+  // ─── Classify synchronously (local rule-based, instant) ───────────────────
+  const classifiedReviews = useMemo<ClassifiedReview[]>(() => {
+    if (reviews.length === 0) return [];
+    const results = classifyBatch(reviews);
+    return reviews.map((r, i) => ({
       ...r,
-      problem_categories: [],
-      classification_status: "pending",
+      problem_categories: results[i],
+      classification_status: "classified" as const,
     }));
-    setClassifiedReviews(pending);
-    setIsClassifying(true);
-
-    let cancelled = false;
-
-    const runClassification = async () => {
-      const result: ClassifiedReview[] = pending.map((r) => ({ ...r }));
-
-      for (let i = 0; i < reviews.length; i += BATCH_SIZE) {
-        if (cancelled) break;
-        const batchReviews = reviews.slice(i, i + BATCH_SIZE);
-        const texts = batchReviews.map((r) => r.review);
-
-        try {
-          const classifications = await classifyProblems(texts);
-          for (let j = 0; j < batchReviews.length; j++) {
-            const idx = i + j;
-            result[idx] = {
-              ...result[idx],
-              problem_categories: (classifications[j]?.categories ?? []) as ProblemCategory[],
-              classification_status: "classified",
-            };
-          }
-          if (!cancelled) {
-            setClassifiedReviews([...result]);
-          }
-        } catch {
-          // Mark batch as failed
-          for (let j = 0; j < batchReviews.length; j++) {
-            const idx = i + j;
-            result[idx] = { ...result[idx], classification_status: "failed" };
-          }
-          if (!cancelled) {
-            setClassifiedReviews([...result]);
-          }
-        }
-
-        // 100ms delay between batches
-        if (!cancelled && i + BATCH_SIZE < reviews.length) {
-          await new Promise((res) => setTimeout(res, 100));
-        }
-      }
-
-      if (!cancelled) {
-        setIsClassifying(false);
-      }
-    };
-
-    runClassification();
-    return () => { cancelled = true; };
   }, [reviews]);
 
   // ─── Compute category stats ────────────────────────────────────────────────
-  const classified = classifiedReviews.filter((r) => r.classification_status === "classified");
+  const classified = classifiedReviews;
 
   const categoryCounts = useMemo(() => {
     const counts = {} as Record<ProblemCategory, number>;
@@ -442,24 +386,13 @@ export function BacklogSection() {
   }
 
   const problemReviewCount = classified.filter((r) => r.problem_categories.length > 0).length;
-  const classificationProgress = reviews.length > 0 ? Math.round((classified.length / reviews.length) * 100) : 0;
 
   return (
     <div>
       {/* Page header */}
-      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-[22px] font-bold text-text-primary tracking-tight mb-1">Backlog</h1>
-          <p className="text-sm text-text-secondary">Problem categories extracted from reviews to inform your next sprint</p>
-        </div>
-        {isClassifying && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-secondary rounded-lg border border-border">
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-text-tertiary border-t-transparent animate-spin" />
-            <span className="text-xs font-medium text-text-secondary">
-              Classifying {classified.length}/{reviews.length} reviews…
-            </span>
-          </div>
-        )}
+      <div className="mb-6">
+        <h1 className="text-[22px] font-bold text-text-primary tracking-tight mb-1">Backlog</h1>
+        <p className="text-sm text-text-secondary">Problem categories extracted from reviews to inform your next sprint</p>
       </div>
 
       {/* Summary bar */}
@@ -472,32 +405,23 @@ export function BacklogSection() {
       </div>
 
       {/* Category cards grid */}
-      {classificationProgress < 5 && isClassifying ? (
-        // Skeleton grid while classifying starts
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-          {ALL_CATEGORIES.map((cat) => (
-            <div key={cat} className="bg-bg-primary rounded-xl border border-border p-5 h-[280px] animate-pulse" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+        {categoryStats
+          .sort((a, b) => b.count - a.count)
+          .map((stat) => (
+            <CategoryCard
+              key={stat.category}
+              category={stat.category}
+              count={stat.count}
+              total={reviews.length}
+              sentiment={stat.sentiment}
+              topTopics={stat.topTopics}
+              trend={stat.trend}
+              isActive={activeCategories.has(stat.category)}
+              onViewReviews={() => handleViewReviews(stat.category)}
+            />
           ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-          {categoryStats
-            .sort((a, b) => b.count - a.count)
-            .map((stat) => (
-              <CategoryCard
-                key={stat.category}
-                category={stat.category}
-                count={stat.count}
-                total={reviews.length}
-                sentiment={stat.sentiment}
-                topTopics={stat.topTopics}
-                trend={stat.trend}
-                isActive={activeCategories.has(stat.category)}
-                onViewReviews={() => handleViewReviews(stat.category)}
-              />
-            ))}
-        </div>
-      )}
+      </div>
 
       {/* Active filter bar */}
       {activeCategories.size > 0 && (
