@@ -62,7 +62,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
           type="text"
           value={countryCode}
           onChange={(e) => setCountryCode(e.target.value)}
-          className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+          className="w-full px-3 py-2.5 min-h-[44px] text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
           placeholder="e.g. it, us"
         />
 
@@ -146,7 +146,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
               max={50}
               value={maxPages}
               onChange={(e) => setMaxPages(Number(e.target.value))}
-              className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+              className="w-full px-3 py-2.5 min-h-[44px] text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
             />
             {maxPages > 10 && (
               <p className="mt-2 text-[11px] text-amber-600 leading-relaxed">

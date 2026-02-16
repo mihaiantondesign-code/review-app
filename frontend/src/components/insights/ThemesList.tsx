@@ -15,10 +15,10 @@ export function ThemesList({ themes, title, subtitle, emptyMessage }: ThemesList
   if (themes.length === 0) {
     return (
       <div>
-        <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+        <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
           {title}
         </h3>
-        <p className="text-[13px] text-text-secondary leading-relaxed mb-4">
+        <p className="text-sm text-text-secondary leading-relaxed mb-4">
           {subtitle}
         </p>
         <p className="text-sm text-text-secondary bg-bg-secondary rounded-md p-4">
@@ -30,10 +30,10 @@ export function ThemesList({ themes, title, subtitle, emptyMessage }: ThemesList
 
   return (
     <div>
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+      <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
         {title}
       </h3>
-      <p className="text-[13px] text-text-secondary leading-relaxed mb-4">
+      <p className="text-sm text-text-secondary leading-relaxed mb-4">
         {subtitle}
       </p>
 
@@ -72,7 +72,7 @@ export function ThemesList({ themes, title, subtitle, emptyMessage }: ThemesList
                     {theme.related_words.map((w) => (
                       <span
                         key={w}
-                        className="text-[11px] font-medium px-2 py-0.5 rounded-pill bg-bg-secondary text-text-secondary"
+                        className="text-sm font-medium px-2 py-0.5 rounded-pill bg-bg-secondary text-text-secondary"
                       >
                         {w}
                       </span>
@@ -80,16 +80,16 @@ export function ThemesList({ themes, title, subtitle, emptyMessage }: ThemesList
                   </div>
                 )}
                 <blockquote className="bg-bg-secondary rounded-sm px-3.5 py-3 text-text-secondary">
-                  <p className="font-medium text-text-primary text-[13px] mb-1">
+                  <p className="font-medium text-text-primary text-sm mb-1">
                     {theme.example_title}{" "}
                     <StarRating rating={theme.example_rating} size="sm" />
-                    <span className="text-text-tertiary font-normal text-xs ml-2">
+                    <span className="text-text-tertiary font-normal text-sm ml-2">
                       {theme.example_date}
                     </span>
                   </p>
-                  <p className="text-[13px] leading-relaxed">{theme.example_review}</p>
+                  <p className="text-sm leading-relaxed">{theme.example_review}</p>
                 </blockquote>
-                <p className="text-xs text-text-tertiary mt-2">
+                <p className="text-sm text-text-tertiary mt-2">
                   {theme.example_author} &middot; {theme.matching_count} matching reviews
                 </p>
               </Accordion.Content>

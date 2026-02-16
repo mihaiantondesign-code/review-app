@@ -112,7 +112,7 @@ function TrustpilotSearchPicker({ selected, onSelect, onClear }: {
         onFocus={() => setOpen(true)}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
         placeholder="Search company or paste URL…"
-        className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+        className="w-full px-4 py-3 min-h-[44px] text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
       />
       {open && query.trim() && (
         <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-bg-primary border border-border rounded-sm shadow-lg overflow-hidden">
@@ -120,7 +120,7 @@ function TrustpilotSearchPicker({ selected, onSelect, onClear }: {
           {!loading && results.length === 0 && (
             <div className="px-4 py-3">
               <p className="text-sm text-text-tertiary mb-1">No results found.</p>
-              <p className="text-sm text-text-secondary">Try pasting the full URL: <span className="font-mono text-xs">trustpilot.com/review/company.com</span></p>
+              <p className="text-sm text-text-secondary">Try pasting the full URL: <span className="font-mono text-sm">trustpilot.com/review/company.com</span></p>
             </div>
           )}
           {results.map((r) => (
@@ -130,13 +130,13 @@ function TrustpilotSearchPicker({ selected, onSelect, onClear }: {
             >
               {r.logo
                 ? <img src={r.logo} alt="" className="w-7 h-7 rounded-sm shrink-0 object-contain" />
-                : <div className="w-7 h-7 rounded-sm shrink-0 bg-bg-secondary flex items-center justify-center text-[10px] font-bold text-text-tertiary">{r.name.slice(0, 2).toUpperCase()}</div>
+                : <div className="w-7 h-7 rounded-sm shrink-0 bg-bg-secondary flex items-center justify-center text-sm font-bold text-text-tertiary">{r.name.slice(0, 2).toUpperCase()}</div>
               }
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium text-text-primary truncate">{r.name}</p>
-                <p className="text-[11px] text-text-tertiary truncate">{r.domain}</p>
+                <p className="text-sm font-medium text-text-primary truncate">{r.name}</p>
+                <p className="text-sm text-text-tertiary truncate">{r.domain}</p>
               </div>
-              {r.reviews > 0 && <span className="text-[11px] text-text-tertiary shrink-0 tabular-nums">{r.reviews.toLocaleString()} reviews</span>}
+              {r.reviews > 0 && <span className="text-sm text-text-tertiary shrink-0 tabular-nums">{r.reviews.toLocaleString()} reviews</span>}
             </button>
           ))}
         </div>
@@ -184,7 +184,7 @@ export function TrustpilotSection() {
       {/* ── Controls ── */}
       <section className="mb-8">
         <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">Trustpilot Reviews</h3>
-        <p className="text-[13px] text-text-secondary leading-relaxed mb-5">Search for any company on Trustpilot and fetch their reviews.</p>
+        <p className="text-sm text-text-secondary leading-relaxed mb-5">Search for any company on Trustpilot and fetch their reviews.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
@@ -194,7 +194,7 @@ export function TrustpilotSection() {
           <div>
             <label className="block text-[15px] font-semibold text-text-primary mb-2">Language</label>
             <select value={language} onChange={(e) => setLanguage(e.target.value)}
-              className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all">
+              className="w-full px-4 py-3 min-h-[44px] text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all">
               {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
           </div>
@@ -211,7 +211,7 @@ export function TrustpilotSection() {
           <div>
             <label className="block text-[15px] font-semibold text-text-primary mb-2">Max pages</label>
             <input type="number" min={1} max={50} value={maxPages} onChange={(e) => setMaxPages(Number(e.target.value))}
-              className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all" />
+              className="w-full px-4 py-3 min-h-[44px] text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all" />
           </div>
         </div>
 
@@ -237,7 +237,7 @@ export function TrustpilotSection() {
                 {selected?.logo && <img src={selected.logo} alt="" className="w-10 h-10 rounded-xl shadow-sm shrink-0 object-contain" />}
                 <div>
                   <h2 className="text-[22px] font-bold text-text-primary tracking-tight leading-tight">{trustpilotInfo.name}</h2>
-                  <p className="text-[13px] text-text-secondary">on Trustpilot</p>
+                  <p className="text-sm text-text-secondary">on Trustpilot</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -245,21 +245,21 @@ export function TrustpilotSection() {
                 <MetricCard label="Stars" value={"★".repeat(Math.round(trustpilotInfo.stars))} />
                 <MetricCard label="Total Reviews (all time)" value={trustpilotInfo.totalReviews.toLocaleString()} />
               </div>
-              <p className="text-[13px] text-text-secondary mt-4">
+              <p className="text-sm text-text-secondary mt-4">
                 Showing <strong>{trustpilotReviews.length}</strong> reviews within the selected time period
               </p>
             </section>
           )}
 
           <section className="bg-bg-secondary rounded-lg p-4 sm:p-6 mb-8">
-            <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-6">Insights</h3>
+            <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-6">Insights</h3>
             <InsightsPanel reviews={trustpilotReviews} source="trustpilot" />
           </section>
 
           <section>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[22px] font-semibold text-text-primary tracking-tight">All Reviews</h3>
-              <button onClick={handleDownload} className="py-2 px-5 text-xs font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]">
+              <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight">All Reviews</h3>
+              <button onClick={handleDownload} className="py-2 px-5 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]">
                 Download Excel
               </button>
             </div>

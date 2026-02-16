@@ -49,7 +49,7 @@ export function VersionInsights({ reviews }: VersionInsightsProps) {
   if (!versionData || versionData.length === 0) {
     return (
       <div>
-        <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+        <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
           Version Insights
         </h3>
         <p className="text-sm text-text-secondary bg-bg-secondary rounded-md p-4">
@@ -61,10 +61,10 @@ export function VersionInsights({ reviews }: VersionInsightsProps) {
 
   return (
     <div>
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+      <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
         Version Insights
       </h3>
-      <p className="text-[13px] text-text-secondary leading-relaxed mb-4">
+      <p className="text-sm text-text-secondary leading-relaxed mb-4">
         How ratings and review volume vary across app versions.
       </p>
 
@@ -72,7 +72,7 @@ export function VersionInsights({ reviews }: VersionInsightsProps) {
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={versionData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
-          <XAxis dataKey="version" tick={{ fontSize: 11 }} />
+          <XAxis dataKey="version" tick={{ fontSize: 12 }} />
           <YAxis domain={[0, 5]} tick={{ fontSize: 12 }} />
           <Tooltip
             contentStyle={{
@@ -89,7 +89,7 @@ export function VersionInsights({ reviews }: VersionInsightsProps) {
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={versionData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
-          <XAxis dataKey="version" tick={{ fontSize: 11 }} />
+          <XAxis dataKey="version" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip
             contentStyle={{
@@ -106,9 +106,9 @@ export function VersionInsights({ reviews }: VersionInsightsProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-bg-secondary">
-              <th className="px-4 py-2 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Version</th>
-              <th className="px-4 py-2 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Reviews</th>
-              <th className="px-4 py-2 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Avg Rating</th>
+              <th className="px-4 py-2 text-left text-sm font-semibold text-text-secondary uppercase tracking-wider">Version</th>
+              <th className="px-4 py-2 text-left text-sm font-semibold text-text-secondary uppercase tracking-wider">Reviews</th>
+              <th className="px-4 py-2 text-left text-sm font-semibold text-text-secondary uppercase tracking-wider">Avg Rating</th>
             </tr>
           </thead>
           <tbody>

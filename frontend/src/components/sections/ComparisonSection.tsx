@@ -45,7 +45,7 @@ function CompAppSlot({
 }) {
   return (
     <div className="rounded-md p-3 bg-bg-tertiary" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <label className="block text-[13px] font-medium text-text-primary mb-1.5">
+      <label className="block text-sm font-medium text-text-primary mb-1.5">
         App {index + 1}
       </label>
 
@@ -55,14 +55,14 @@ function CompAppSlot({
           <div className="flex gap-2 mt-2">
             <button
               onClick={onClear}
-              className="flex-1 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.98] rounded-pill transition-all duration-150"
+              className="flex-1 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.07)] active:scale-[0.98] rounded-pill transition-all duration-150"
             >
               Change
             </button>
             {canRemove && (
               <button
                 onClick={onRemove}
-                className="flex-1 py-1.5 text-xs font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
+                className="flex-1 py-1.5 text-sm font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
               >
                 Remove
               </button>
@@ -81,7 +81,7 @@ function CompAppSlot({
           {canRemove && (
             <button
               onClick={onRemove}
-              className="mt-2 w-full py-1.5 text-xs font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
+              className="mt-2 w-full py-1.5 text-sm font-medium text-negative hover:bg-negative/5 active:bg-negative/10 active:scale-[0.98] rounded-pill transition-all duration-150"
             >
               Remove
             </button>
@@ -162,32 +162,32 @@ export function ComparisonSection() {
     <div>
       {/* Input controls */}
       <section className="mb-8">
-        <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+        <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
           Compare Multiple Apps
         </h3>
-        <p className="text-[13px] text-text-secondary leading-relaxed mb-5">
+        <p className="text-sm text-text-secondary leading-relaxed mb-5">
           Search for apps or enter an App Store ID directly (the number in any App Store URL:
-          apps.apple.com/.../id<code className="bg-bg-secondary px-1 py-0.5 rounded-sm font-mono text-xs">284882215</code>).
+          apps.apple.com/.../id<code className="bg-bg-secondary px-1 py-0.5 rounded-sm font-mono text-sm">284882215</code>).
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-[13px] font-medium text-text-primary mb-1.5">
+            <label className="block text-sm font-medium text-text-primary mb-1.5">
               Country code
             </label>
             <input
               type="text"
               value={compCountry}
               onChange={(e) => setCompCountry(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+              className="w-full px-3 py-2.5 min-h-[44px] text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
             />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[13px] font-medium text-text-primary">
+              <label className="text-sm font-medium text-text-primary">
                 Months back
               </label>
-              <span className="text-[13px] font-bold text-text-primary tabular-nums">{compMonths}</span>
+              <span className="text-sm font-bold text-text-primary tabular-nums">{compMonths}</span>
             </div>
             <input
               type="range"
@@ -199,7 +199,7 @@ export function ComparisonSection() {
             />
           </div>
           <div>
-            <label className="block text-[13px] font-medium text-text-primary mb-1.5">
+            <label className="block text-sm font-medium text-text-primary mb-1.5">
               Max pages per app
             </label>
             <input
@@ -208,7 +208,7 @@ export function ComparisonSection() {
               max={50}
               value={compPages}
               onChange={(e) => setCompPages(Number(e.target.value))}
-              className="w-full px-3 py-2.5 text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+              className="w-full px-3 py-2.5 min-h-[44px] text-sm border border-border-strong rounded-sm bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
             />
           </div>
         </div>
@@ -216,7 +216,7 @@ export function ComparisonSection() {
 
       {/* App slots */}
       <section className="mb-8">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-3">
+        <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-3">
           Apps to Compare
         </p>
 
@@ -316,12 +316,12 @@ function ComparisonResults({
       {/* Score overview — focal point */}
       <section className="mb-10">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-[20px] sm:text-[22px] font-semibold text-text-primary tracking-tight">
+          <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight">
             Score Overview
           </h3>
           <button
             onClick={onDownload}
-            className="shrink-0 py-2 px-4 sm:px-5 text-xs font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
+            className="shrink-0 py-2 px-4 sm:px-5 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
           >
             Download
           </button>
@@ -343,8 +343,8 @@ function ComparisonResults({
                   { label: "Negative", value: `${s.negPct.toFixed(0)}%`, color: "text-[#FF3B30]" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="bg-bg-secondary rounded-lg px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-0.5">{label}</p>
-                    <p className={`text-[14px] font-semibold tabular-nums ${color ?? "text-text-primary"}`}>{value}</p>
+                    <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-0.5">{label}</p>
+                    <p className={`text-sm font-semibold tabular-nums ${color ?? "text-text-primary"}`}>{value}</p>
                   </div>
                 ))}
               </div>
@@ -357,11 +357,11 @@ function ComparisonResults({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-bg-secondary">
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">App</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Reviews</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Avg Rating</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Positive %</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Negative %</th>
+                  <th className="px-4 py-2.5 text-left text-sm font-semibold text-text-secondary uppercase tracking-wider">App</th>
+                  <th className="px-4 py-2.5 text-left text-sm font-semibold text-text-secondary uppercase tracking-wider">Reviews</th>
+                  <th className="px-4 py-2.5 text-left text-sm font-semibold text-text-secondary uppercase tracking-wider">Avg Rating</th>
+                  <th className="px-4 py-2.5 text-left text-sm font-semibold text-text-secondary uppercase tracking-wider">Positive %</th>
+                  <th className="px-4 py-2.5 text-left text-sm font-semibold text-text-secondary uppercase tracking-wider">Negative %</th>
                 </tr>
               </thead>
               <tbody>
@@ -382,13 +382,13 @@ function ComparisonResults({
 
       {/* Rating distribution chart */}
       <section className="mb-10">
-        <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-4">
+        <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-4">
           Rating Distribution
         </h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={ratingChartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
-            <XAxis dataKey="rating" tick={{ fontSize: 13 }} />
+            <XAxis dataKey="rating" tick={{ fontSize: 14 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip
               contentStyle={{
@@ -459,10 +459,10 @@ function HeadToHead({
 
   return (
     <div>
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+      <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
         Head-to-Head: Problems & Wins
       </h3>
-      <p className="text-[13px] text-text-secondary leading-relaxed mb-5">
+      <p className="text-sm text-text-secondary leading-relaxed mb-5">
         Top recurring themes extracted from 1-2 star and 4-5 star reviews for each app.
       </p>
 
@@ -475,21 +475,21 @@ function HeadToHead({
           return (
             <div key={aid}>
               <h4 className="text-base font-semibold text-text-primary mb-0.5">{name}</h4>
-              <p className="text-[13px] text-text-secondary mb-4">
+              <p className="text-sm text-text-secondary mb-4">
                 <span className="font-bold text-text-primary tabular-nums">{avg.toFixed(1)}</span> / 5 &middot; {reviews.length} reviews
               </p>
 
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-2">Top Problems</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-2">Top Problems</p>
               {!appThemes ? (
-                <p className="text-xs text-text-secondary">Analyzing themes...</p>
+                <p className="text-sm text-text-secondary">Analyzing themes...</p>
               ) : appThemes.problems.length === 0 ? (
-                <p className="text-xs text-text-secondary bg-bg-primary rounded-sm p-2">No major problems found</p>
+                <p className="text-sm text-text-secondary bg-bg-primary rounded-sm p-2">No major problems found</p>
               ) : (
                 <Accordion.Root type="multiple" className="space-y-1.5">
                   {appThemes.problems.map((p, i) => (
                     <Accordion.Item key={i} value={`p-${i}`} className="rounded-md overflow-hidden bg-bg-primary" style={{ boxShadow: "var(--shadow-sm)" }}>
                       <Accordion.Header>
-                        <Accordion.Trigger className="w-full px-3 py-2.5 text-left text-xs font-medium flex justify-between items-center hover:bg-[rgba(0,0,0,0.02)] transition-colors group">
+                        <Accordion.Trigger className="w-full px-3 py-2.5 text-left text-sm font-medium flex justify-between items-center hover:bg-[rgba(0,0,0,0.02)] transition-colors group">
                           <span>
                             &ldquo;{p.theme}&rdquo;
                             <span className="text-text-tertiary font-normal ml-1.5">{p.mentions}x</span>
@@ -499,7 +499,7 @@ function HeadToHead({
                           </svg>
                         </Accordion.Trigger>
                       </Accordion.Header>
-                      <Accordion.Content className="px-3 pb-2.5 text-xs text-text-secondary leading-relaxed">
+                      <Accordion.Content className="px-3 pb-2.5 text-sm text-text-secondary leading-relaxed">
                         {p.example_review.slice(0, 200)}{p.example_review.length > 200 ? "..." : ""}
                       </Accordion.Content>
                     </Accordion.Item>
@@ -507,17 +507,17 @@ function HeadToHead({
                 </Accordion.Root>
               )}
 
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mt-5 mb-2">Top Wins</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mt-5 mb-2">Top Wins</p>
               {!appThemes ? (
-                <p className="text-xs text-text-secondary">Analyzing themes...</p>
+                <p className="text-sm text-text-secondary">Analyzing themes...</p>
               ) : appThemes.wins.length === 0 ? (
-                <p className="text-xs text-text-secondary bg-bg-primary rounded-sm p-2">No strong wins found</p>
+                <p className="text-sm text-text-secondary bg-bg-primary rounded-sm p-2">No strong wins found</p>
               ) : (
                 <Accordion.Root type="multiple" className="space-y-1.5">
                   {appThemes.wins.map((w, i) => (
                     <Accordion.Item key={i} value={`w-${i}`} className="rounded-md overflow-hidden bg-bg-primary" style={{ boxShadow: "var(--shadow-sm)" }}>
                       <Accordion.Header>
-                        <Accordion.Trigger className="w-full px-3 py-2.5 text-left text-xs font-medium flex justify-between items-center hover:bg-[rgba(0,0,0,0.02)] transition-colors group">
+                        <Accordion.Trigger className="w-full px-3 py-2.5 text-left text-sm font-medium flex justify-between items-center hover:bg-[rgba(0,0,0,0.02)] transition-colors group">
                           <span>
                             &ldquo;{w.theme}&rdquo;
                             <span className="text-text-tertiary font-normal ml-1.5">{w.mentions}x</span>
@@ -527,7 +527,7 @@ function HeadToHead({
                           </svg>
                         </Accordion.Trigger>
                       </Accordion.Header>
-                      <Accordion.Content className="px-3 pb-2.5 text-xs text-text-secondary leading-relaxed">
+                      <Accordion.Content className="px-3 pb-2.5 text-sm text-text-secondary leading-relaxed">
                         {w.example_review.slice(0, 200)}{w.example_review.length > 200 ? "..." : ""}
                       </Accordion.Content>
                     </Accordion.Item>

@@ -5,6 +5,21 @@ import { useAppSearch } from "@/hooks/useAppSearch";
 import { AppCard } from "./AppCard";
 import type { AppSearchResult } from "@/types";
 
+// 3-dot bouncing animation for "Searching..." state
+function SearchingDots() {
+  return (
+    <span className="inline-flex items-center gap-[3px] ml-1">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-1 h-1 rounded-full bg-text-tertiary animate-bounce"
+          style={{ animationDelay: `${i * 0.15}s`, animationDuration: "0.8s" }}
+        />
+      ))}
+    </span>
+  );
+}
+
 interface AppMultiSelectPickerProps {
   selected: AppSearchResult[];
   onChange: (apps: AppSearchResult[]) => void;
@@ -96,7 +111,7 @@ export function AppMultiSelectPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm border rounded-sm bg-bg-primary transition-all duration-150 ${
+        className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 min-h-[44px] text-sm border rounded-sm bg-bg-primary transition-all duration-150 ${
           open
             ? "border-accent ring-2 ring-accent/15"
             : "border-border-strong hover:border-accent/50"
@@ -121,32 +136,41 @@ export function AppMultiSelectPicker({
         <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-bg-primary border border-border rounded-sm shadow-lg overflow-hidden">
           {/* Search input */}
           <div className="p-2 border-b border-border">
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => {
-                // Numeric ID direct-select
-                const val = e.target.value;
-                setQuery(val);
-                if (val.trim().match(/^\d+$/) && val.trim().length > 5) {
-                  const syntheticApp: AppSearchResult = {
-                    id: val.trim(),
-                    name: `App ${val.trim()}`,
-                    developer: "",
-                    icon: "",
-                    bundle: "",
-                    price: "Free",
-                    rating: 0,
-                    ratings_count: 0,
-                  };
-                  toggle(syntheticApp);
-                  setQuery("");
-                }
-              }}
-              placeholder="Search apps..."
-              className="w-full px-2.5 py-2 text-sm bg-bg-secondary rounded-sm outline-none text-text-primary placeholder-text-tertiary"
-            />
+            <div className="relative">
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  // Numeric ID direct-select
+                  const val = e.target.value;
+                  setQuery(val);
+                  if (val.trim().match(/^\d+$/) && val.trim().length > 5) {
+                    const syntheticApp: AppSearchResult = {
+                      id: val.trim(),
+                      name: `App ${val.trim()}`,
+                      developer: "",
+                      icon: "",
+                      bundle: "",
+                      price: "Free",
+                      rating: 0,
+                      ratings_count: 0,
+                    };
+                    toggle(syntheticApp);
+                    setQuery("");
+                  }
+                }}
+                placeholder="Search apps..."
+                className="w-full px-2.5 min-h-[44px] text-sm bg-bg-secondary rounded-sm outline-none text-text-primary placeholder-text-tertiary"
+              />
+              {isSearching && (
+                <div className="absolute inset-0 flex items-center px-2.5 pointer-events-none bg-bg-secondary rounded-sm">
+                  <span className="text-sm text-text-tertiary flex items-center">
+                    Searching<SearchingDots />
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Results list */}
@@ -176,7 +200,9 @@ export function AppMultiSelectPicker({
             ) : null}
 
             {isSearching && (
-              <p className="px-3 py-3 text-xs text-text-tertiary">Searching...</p>
+              <p className="px-3 py-3 text-xs text-text-tertiary flex items-center">
+                Searching<SearchingDots />
+              </p>
             )}
 
             {!isSearching && query.trim() && results.length === 0 && (

@@ -55,7 +55,7 @@ function MobileSearchScreen({ onDone }: { onDone: () => void }) {
             value={countryCode}
             onChange={(e) => setCountryCode(e.target.value)}
             placeholder="e.g. it, us, gb"
-            className="w-full px-4 py-3.5 text-base border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+            className="w-full px-4 py-3.5 min-h-[44px] text-base border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
           />
         </div>
 
@@ -104,7 +104,7 @@ function MobileSearchScreen({ onDone }: { onDone: () => void }) {
             <input
               type="number" min={1} max={50} value={maxPages}
               onChange={(e) => setMaxPages(Number(e.target.value))}
-              className="w-full px-4 py-3.5 text-base border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+              className="w-full px-4 py-3.5 min-h-[44px] text-base border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
             />
           </div>
         )}

@@ -25,15 +25,15 @@ export function AdjustedRatingCard({ metrics }: AdjustedRatingCardProps) {
 
   return (
     <div>
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+      <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
         Adjusted Rating
       </h3>
-      <p className="text-[13px] text-text-secondary leading-relaxed mb-4">
+      <p className="text-sm text-text-secondary leading-relaxed mb-4">
         Excludes reviews about pricing, support, policies, and physical locations
         to isolate app-specific feedback.
       </p>
 
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <MetricCard
           label="Original Rating"
           value={`${metrics.original_avg.toFixed(2)} ★`}
@@ -56,10 +56,10 @@ export function AdjustedRatingCard({ metrics }: AdjustedRatingCardProps) {
 
       {Object.keys(metrics.category_breakdown).length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-2">
+          <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-2">
             Excluded by category
           </p>
-          <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${Math.min(Object.keys(metrics.category_breakdown).length, 4)}, 1fr)` }}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {Object.entries(metrics.category_breakdown)
               .sort(([, a], [, b]) => b - a)
               .map(([cat, count]) => (
