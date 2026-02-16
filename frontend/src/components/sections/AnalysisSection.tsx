@@ -172,6 +172,9 @@ function HighlightedText({
 interface ClassifiedReviewWithEvidence extends Review {
   problem_categories: ProblemCategory[];
   matchedKeywords: Partial<Record<ProblemCategory, string[]>>;
+  confidence: number;
+  needsReview: boolean;
+  sentiment: "positive" | "negative" | "neutral";
 }
 
 function BacklogReviewCard({
@@ -213,6 +216,11 @@ function BacklogReviewCard({
               </button>
             )}
           </p>
+          {review.needsReview && review.problem_categories.length > 0 && (
+            <p className="mt-1.5 text-[11px] font-medium text-[#b45309]">
+              ⚠ Verifica consigliata
+            </p>
+          )}
         </div>
         <div className="flex sm:flex-col gap-x-4 gap-y-2 flex-wrap sm:shrink-0 sm:w-[160px] sm:border-l sm:border-border sm:pl-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-border">
           <div>
@@ -229,7 +237,22 @@ function BacklogReviewCard({
           </div>
           {review.problem_categories.length > 0 && (
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-1">Problem</p>
+              <div className="flex items-center gap-1.5 mb-1">
+                <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary">Problem</p>
+                {/* Confidence badge */}
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                  style={
+                    review.confidence >= 0.7
+                      ? { backgroundColor: "rgba(34,197,94,0.12)", color: "#16a34a" }
+                      : review.confidence >= 0.4
+                      ? { backgroundColor: "rgba(234,179,8,0.15)", color: "#b45309" }
+                      : { backgroundColor: "rgba(239,68,68,0.10)", color: "#dc2626" }
+                  }
+                >
+                  {Math.round(review.confidence * 100)}%
+                </span>
+              </div>
               <div className="flex flex-wrap gap-1">
                 {review.problem_categories.map((cat) => (
                   <ProblemChip key={cat} category={cat} size="xs" onClick={() => onCategoryClick(cat)} />
@@ -474,6 +497,9 @@ export function AnalysisSection() {
       ...r,
       problem_categories: results[i].categories,
       matchedKeywords: results[i].matchedKeywords,
+      confidence: results[i].confidence,
+      needsReview: results[i].needsReview,
+      sentiment: results[i].sentiment,
     }));
   }, [reviews, hasClassified]);
 
