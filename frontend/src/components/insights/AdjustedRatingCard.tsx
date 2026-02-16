@@ -1,6 +1,6 @@
 "use client";
 
-import { MetricCard } from "@/components/shared/MetricCard";
+import React from "react";
 import type { AdjustedMetrics } from "@/types";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -23,6 +23,10 @@ export function AdjustedRatingCard({ metrics }: AdjustedRatingCardProps) {
         ? "App experience rates lower"
         : "No change";
 
+  const categoryEntries = Object.entries(metrics.category_breakdown).sort(
+    ([, a], [, b]) => b - a
+  );
+
   return (
     <div>
       <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
@@ -33,42 +37,47 @@ export function AdjustedRatingCard({ metrics }: AdjustedRatingCardProps) {
         to isolate app-specific feedback.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        <MetricCard
-          label="Original Rating"
-          value={`${metrics.original_avg.toFixed(2)} ★`}
-          help={`Based on all ${metrics.original_count} reviews`}
-        />
-        <MetricCard
-          label="Adjusted Rating"
-          value={`${metrics.adjusted_avg.toFixed(2)} ★`}
-          delta={`${deltaSign}${metrics.rating_delta.toFixed(2)} · ${deltaContext}`}
-          help={`Based on ${metrics.adjusted_count} app-related reviews`}
-          prominent
-        />
-        <MetricCard
-          label="Excluded Reviews"
-          value={`${metrics.excluded_count}`}
-          help={`${metrics.excluded_pct.toFixed(0)}% of total reviews excluded`}
-          delta={`${metrics.excluded_pct.toFixed(0)}% of total`}
-        />
+      {/* Top 3 stats — divider separated */}
+      <div className="flex items-start gap-5 flex-wrap mb-4">
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Original Rating</p>
+          <p className="text-xl font-bold text-text-primary tabular-nums">{metrics.original_avg.toFixed(2)} ★</p>
+          <p className="text-sm text-text-tertiary">{metrics.original_count} reviews</p>
+        </div>
+        <div className="w-px h-9 bg-border shrink-0 mt-1" />
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Adjusted Rating</p>
+          <p className="text-xl font-bold text-text-primary tabular-nums">{metrics.adjusted_avg.toFixed(2)} ★</p>
+          <p className={`text-sm font-semibold ${metrics.rating_delta >= 0 ? "text-positive" : "text-negative"}`}>
+            {deltaSign}{metrics.rating_delta.toFixed(2)} · {deltaContext}
+          </p>
+        </div>
+        <div className="w-px h-9 bg-border shrink-0 mt-1" />
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Excluded</p>
+          <p className="text-xl font-bold text-text-primary tabular-nums">{metrics.excluded_count}</p>
+          <p className="text-sm text-text-tertiary">{metrics.excluded_pct.toFixed(0)}% of total</p>
+        </div>
       </div>
 
-      {Object.keys(metrics.category_breakdown).length > 0 && (
+      {/* Category breakdown — divider separated */}
+      {categoryEntries.length > 0 && (
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-2">
             Excluded by category
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {Object.entries(metrics.category_breakdown)
-              .sort(([, a], [, b]) => b - a)
-              .map(([cat, count]) => (
-                <MetricCard
-                  key={cat}
-                  label={CATEGORY_LABELS[cat] || cat}
-                  value={String(count)}
-                />
-              ))}
+          <div className="flex items-start gap-5 flex-wrap">
+            {categoryEntries.map(([cat, count], idx) => (
+              <React.Fragment key={cat}>
+                <div>
+                  <p className="text-sm text-text-secondary mb-0.5">{CATEGORY_LABELS[cat] || cat}</p>
+                  <p className="text-xl font-bold text-text-primary tabular-nums">{count}</p>
+                </div>
+                {idx < categoryEntries.length - 1 && (
+                  <div className="w-px h-9 bg-border shrink-0 mt-1" />
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </div>
       )}
