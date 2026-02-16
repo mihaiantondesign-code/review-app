@@ -55,7 +55,7 @@ function StarsBreakdownCard({ counts, total }: { counts: { rating: number; count
   const max = Math.max(...counts.map((c) => c.count), 1);
   return (
     <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2.5" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-1">Stars Breakdown</p>
+      <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-1">Stars Breakdown</p>
       {[5, 4, 3, 2, 1].map((s) => {
         const c = counts.find((x) => x.rating === s)!;
         const pct = total > 0 ? (c.count / total) * 100 : 0;
@@ -63,11 +63,11 @@ function StarsBreakdownCard({ counts, total }: { counts: { rating: number; count
         const color = s >= 4 ? "#34C759" : s === 3 ? "#FF9500" : "#FF3B30";
         return (
           <div key={s} className="flex items-center gap-2">
-            <span className="text-xs text-text-secondary w-5 shrink-0">{s}★</span>
+            <span className="text-sm text-text-secondary w-5 shrink-0">{s}★</span>
             <div className="flex-1 h-2 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
               <div className="h-full rounded-full transition-all duration-500" style={{ width: `${barPct}%`, backgroundColor: color }} />
             </div>
-            <span className="text-xs tabular-nums text-text-secondary w-10 text-right shrink-0 font-medium">
+            <span className="text-sm tabular-nums text-text-secondary w-10 text-right shrink-0 font-medium">
               {c.count.toLocaleString()}
             </span>
           </div>
@@ -110,17 +110,17 @@ function SentimentCard({ reviews }: { reviews: Review[] }) {
 
   return (
     <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2.5" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-1">Sentiment Breakdown</p>
+      <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-1">Sentiment Breakdown</p>
       {buckets.map((b) => {
         const pct = total > 0 ? Math.round((b.count / total) * 100) : 0;
         const barPct = (b.count / maxCount) * 100;
         return (
           <div key={b.label} className="flex items-center gap-2">
-            <span className="text-xs text-text-secondary w-14 shrink-0">{b.label}</span>
+            <span className="text-sm text-text-secondary w-14 shrink-0">{b.label}</span>
             <div className="flex-1 h-2 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
               <div className="h-full rounded-full transition-all duration-500" style={{ width: `${barPct}%`, backgroundColor: b.color }} />
             </div>
-            <span className="text-xs tabular-nums text-text-secondary w-16 text-right shrink-0 font-medium">
+            <span className="text-sm tabular-nums text-text-secondary w-16 text-right shrink-0 font-medium">
               {pct}%
             </span>
           </div>
@@ -148,13 +148,13 @@ function ReviewCard({ review }: { review: Review }) {
           <div className="flex items-center gap-2 mb-1">
             <StarRating rating={review.rating} size="sm" />
           </div>
-          <h4 className="text-[15px] font-semibold text-text-primary mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
+          <h4 className="text-[16px] font-semibold text-[#0051B3] mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
           <p className="text-sm text-text-secondary leading-relaxed">
             {text}
             {isLong && (
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="ml-1 text-accent text-xs font-medium hover:underline"
+                className="ml-1 text-accent text-sm font-medium hover:underline"
               >
                 {expanded ? "less" : "more"}
               </button>
@@ -171,8 +171,8 @@ function ReviewCard({ review }: { review: Review }) {
             { label: "Sentiment", value: sentimentLabel, valueClass: sentimentColor },
           ].map(({ label, value, valueClass }) => (
             <div key={label}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-0.5">{label}</p>
-              <p className={`text-[13px] font-medium truncate ${valueClass ?? "text-text-primary"}`}>{value}</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-0.5">{label}</p>
+              <p className={`text-sm font-medium truncate ${valueClass ?? "text-text-primary"}`}>{value}</p>
             </div>
           ))}
         </div>
@@ -247,7 +247,7 @@ function ReviewListings({ reviews, onDownload }: { reviews: Review[]; onDownload
     <section>
       {/* Header row */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-text-primary tracking-tight">Review Listings</h3>
+        <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight">Review Listings</h3>
         <button
           onClick={onDownload}
           className="flex items-center gap-1.5 py-2 px-4 text-sm font-semibold text-white bg-text-primary rounded-pill transition-all duration-150 hover:bg-black hover:shadow-md active:scale-[0.97]"
@@ -293,7 +293,7 @@ function ReviewListings({ reviews, onDownload }: { reviews: Review[]; onDownload
       <div className="space-y-6">
         {pageGrouped.map(([day, dayReviews]) => (
           <div key={day}>
-            <p className="text-xs font-semibold uppercase tracking-[0.06em] text-text-secondary mb-3">
+            <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-secondary mb-3">
               {friendlyDate(day)}
             </p>
             <div className="space-y-3">
@@ -397,7 +397,7 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
             )}
             <div>
               <h1 className="text-[22px] font-bold text-text-primary tracking-tight leading-tight">{selectedApp.name}</h1>
-              <p className="text-[13px] text-text-secondary">
+              <p className="text-sm text-text-secondary">
                 Reviews — view, search and get stats on reviews with text.{" "}
                 <a href="#" className="text-accent hover:underline">Learn more →</a>
               </p>
@@ -407,7 +407,7 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
         {!selectedApp && (
           <>
             <h1 className="text-[22px] font-bold text-text-primary tracking-tight mb-1">Reviews</h1>
-            <p className="text-[13px] text-text-secondary">
+            <p className="text-sm text-text-secondary">
               View, search and get stats on reviews with text.{" "}
               <a href="#" className="text-accent hover:underline">Learn more →</a>
             </p>
@@ -420,14 +420,14 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           {/* 1. Total reviews */}
           <div className="bg-bg-primary rounded-xl border border-border p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-            <p className="text-xs font-semibold uppercase tracking-[0.07em] text-text-tertiary mb-2">Reviews</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.07em] text-text-tertiary mb-2">Reviews</p>
             <p className="text-[28px] font-bold text-text-primary leading-none tabular-nums">{stats.total.toLocaleString()}</p>
-            <p className="text-xs text-text-secondary mt-1">For selected range</p>
+            <p className="text-sm text-text-secondary mt-1">For selected range</p>
           </div>
 
           {/* 2. Avg stars */}
           <div className="bg-bg-primary rounded-xl border border-border p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-            <p className="text-xs font-semibold uppercase tracking-[0.07em] text-text-tertiary mb-2">Avg Stars</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.07em] text-text-tertiary mb-2">Avg Stars</p>
             <p className="text-[28px] font-bold text-text-primary leading-none tabular-nums">{stats.avg.toFixed(1)}</p>
             <div className="mt-1">
               <StarRating rating={stats.avg} size="sm" />
@@ -469,7 +469,7 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
       {activeTab === "trend" && (
         <div className="space-y-10">
           <section className="bg-bg-secondary rounded-lg p-4 sm:p-6">
-            <h3 className="text-[18px] font-semibold text-text-primary tracking-tight mb-6">Insights</h3>
+            <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-6">Insights</h3>
             <InsightsPanel reviews={reviews} />
           </section>
           <VersionInsights reviews={reviews} />

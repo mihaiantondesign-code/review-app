@@ -1,6 +1,5 @@
 "use client";
 
-import { MetricCard } from "@/components/shared/MetricCard";
 import { SentimentChart } from "@/components/shared/SentimentChart";
 import type { SentimentResult } from "@/types";
 
@@ -11,21 +10,31 @@ interface SentimentBreakdownProps {
 export function SentimentBreakdown({ sentiment }: SentimentBreakdownProps) {
   return (
     <div>
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+      <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
         Sentiment Breakdown
       </h3>
-      <p className="text-[13px] text-text-secondary leading-relaxed mb-4">
+      <p className="text-sm text-text-secondary leading-relaxed mb-4">
         Analysis of positive and negative language used across all reviews.
       </p>
 
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <MetricCard label="Positive Words Found" value={String(sentiment.positive)} />
-        <MetricCard label="Negative Words Found" value={String(sentiment.negative)} />
-        <MetricCard
-          label="Sentiment Score"
-          value={`${sentiment.score >= 0 ? "+" : ""}${sentiment.score.toFixed(2)}`}
-          help="Range: -1.0 (very negative) to +1.0 (very positive)"
-        />
+      {/* Inline stats separated by dividers — no card boxes */}
+      <div className="flex items-center gap-5 mb-5 flex-wrap">
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Positive words</p>
+          <p className="text-xl font-bold text-text-primary tabular-nums">{sentiment.positive}</p>
+        </div>
+        <div className="w-px h-9 bg-border shrink-0" />
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Negative words</p>
+          <p className="text-xl font-bold text-text-primary tabular-nums">{sentiment.negative}</p>
+        </div>
+        <div className="w-px h-9 bg-border shrink-0" />
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Sentiment score</p>
+          <p className="text-xl font-bold text-text-primary tabular-nums">
+            {sentiment.score >= 0 ? "+" : ""}{sentiment.score.toFixed(2)}
+          </p>
+        </div>
       </div>
 
       <SentimentChart positive={sentiment.positive} negative={sentiment.negative} />

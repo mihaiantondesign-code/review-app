@@ -72,10 +72,10 @@ export function ReviewCategories({ reviews }: ReviewCategoriesProps) {
 
   return (
     <div>
-      <h3 className="text-[22px] font-semibold text-text-primary tracking-tight mb-1">
+      <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
         Rating Breakdown
       </h3>
-      <p className="text-[13px] text-text-secondary leading-relaxed mb-5">
+      <p className="text-sm text-text-secondary leading-relaxed mb-5">
         Distribution of reviews by star rating with the most common topics per category.
       </p>
 
@@ -87,8 +87,8 @@ export function ReviewCategories({ reviews }: ReviewCategoriesProps) {
             <div className="flex items-center gap-3 px-4 py-3">
               {/* Star label */}
               <div className="flex items-center gap-1.5 w-[120px] shrink-0">
-                <span className="text-[13px] font-semibold text-text-primary">{cat.label}</span>
-                <span className="text-[11px] text-text-tertiary tabular-nums">{"★".repeat(cat.stars)}</span>
+                <span className="text-sm font-semibold text-text-primary">{cat.label}</span>
+                <span className="text-sm text-text-tertiary tabular-nums">{"★".repeat(cat.stars)}</span>
               </div>
 
               {/* Bar */}
@@ -105,8 +105,8 @@ export function ReviewCategories({ reviews }: ReviewCategoriesProps) {
 
               {/* Count + pct */}
               <div className="w-[80px] shrink-0 text-right">
-                <span className="text-[13px] font-semibold text-text-primary tabular-nums">{cat.count.toLocaleString()}</span>
-                <span className="text-[11px] text-text-tertiary ml-1.5">({cat.pct.toFixed(0)}%)</span>
+                <span className="text-sm font-semibold text-text-primary tabular-nums">{cat.count.toLocaleString()}</span>
+                <span className="text-sm text-text-tertiary ml-1.5">({cat.pct.toFixed(0)}%)</span>
               </div>
             </div>
 
@@ -116,7 +116,7 @@ export function ReviewCategories({ reviews }: ReviewCategoriesProps) {
                 {cat.keywords.map((kw) => (
                   <span
                     key={kw.word}
-                    className="text-[11px] px-2 py-0.5 rounded-pill font-medium"
+                    className="text-sm px-2 py-0.5 rounded-pill font-medium"
                     style={{ background: cat.bg, color: cat.color }}
                   >
                     {kw.word}

@@ -18,13 +18,13 @@ export function MetricCard({ label, value, help, delta, prominent }: MetricCardP
       }`}
       style={{ boxShadow: prominent ? "var(--shadow-md)" : "var(--shadow-sm)" }}
     >
-      <div className={`text-[10px] font-semibold uppercase tracking-[0.08em] mb-1.5 ${
+      <div className={`text-sm font-semibold uppercase tracking-[0.08em] mb-1.5 ${
         prominent ? "text-white/60" : "text-text-tertiary"
       }`}>
         {label}
         {help && (
           <span
-            className={`inline-flex items-center justify-center w-3.5 h-3.5 ml-1 rounded-full text-[8px] font-bold cursor-help align-middle ${
+            className={`inline-flex items-center justify-center w-3.5 h-3.5 ml-1 rounded-full text-sm font-bold cursor-help align-middle ${
               prominent ? "bg-white/15 text-white/70" : "bg-border-strong/30 text-text-tertiary"
             }`}
             title={help}
