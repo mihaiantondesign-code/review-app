@@ -68,6 +68,16 @@ export interface FetchProgress {
   message: string;
 }
 
-export type ActiveSection = "appstore" | "trustpilot" | "comparison";
+export type ActiveSection = "appstore" | "trustpilot" | "comparison" | "insights";
+
+export type InsightDimension = "topics" | "custom_topics" | "tags";
+
+export type MatchMode = "ANY" | "ALL";
+
+export interface InsightQuery {
+  include: Record<InsightDimension, string[]>;
+  exclude: Record<InsightDimension, string[]>;
+  match_mode: MatchMode;
+}
 
 export type FetchMode = "time" | "pages";
