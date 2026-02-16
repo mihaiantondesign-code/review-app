@@ -70,7 +70,12 @@ export interface FetchProgress {
 
 export type ActiveSection = "appstore" | "trustpilot" | "comparison" | "insights" | "backlog";
 
-export type ProblemCategory = "TECHNICAL" | "DESIGN" | "CUSTOMER_EXPERIENCE" | "PRICING" | "PERFORMANCE";
+export type ProblemCategory =
+  | "BUGS_TECNICI"
+  | "ONBOARDING_SETUP"
+  | "UX_USABILITA"
+  | "FEATURES_FUNZIONALITA"
+  | "CUSTOMER_SUPPORT";
 
 export type ClassificationStatus = "pending" | "classified" | "failed" | "unclassified";
 

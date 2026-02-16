@@ -11,20 +11,28 @@ import type { ProblemCategory, ClassifiedReview, Review } from "@/types";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ALL_CATEGORIES: ProblemCategory[] = [
-  "TECHNICAL",
-  "DESIGN",
-  "CUSTOMER_EXPERIENCE",
-  "PRICING",
-  "PERFORMANCE",
+  "BUGS_TECNICI",
+  "ONBOARDING_SETUP",
+  "UX_USABILITA",
+  "FEATURES_FUNZIONALITA",
+  "CUSTOMER_SUPPORT",
 ];
 
 const CATEGORY_ICONS: Record<ProblemCategory, ReactElement> = {
-  TECHNICAL: (
+  BUGS_TECNICI: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
     </svg>
   ),
-  DESIGN: (
+  ONBOARDING_SETUP: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="22" y1="11" x2="16" y2="11" />
+    </svg>
+  ),
+  UX_USABILITA: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
       <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
@@ -33,21 +41,16 @@ const CATEGORY_ICONS: Record<ProblemCategory, ReactElement> = {
       <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
     </svg>
   ),
-  CUSTOMER_EXPERIENCE: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-    </svg>
-  ),
-  PRICING: (
+  FEATURES_FUNZIONALITA: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
       <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
   ),
-  PERFORMANCE: (
+  CUSTOMER_SUPPORT: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+      <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
     </svg>
   ),
 };
@@ -172,7 +175,7 @@ function CategoryCard({
             {CATEGORY_ICONS[category]}
           </div>
           <div>
-            <p className="text-[15px] font-semibold text-text-primary leading-tight">{cfg.label === "CX" ? "Customer Experience" : cfg.label}</p>
+            <p className="text-[15px] font-semibold text-text-primary leading-tight">{cfg.label}</p>
             <p className="text-xs text-text-tertiary mt-0.5">{pct}% of reviews</p>
           </div>
         </div>
@@ -261,7 +264,7 @@ function SummaryBar({
                 : { color: "var(--color-text-secondary)", backgroundColor: "var(--color-bg-secondary)", borderColor: "transparent" }
             }
           >
-            {cfg.label === "CX" ? "CX" : cfg.shortLabel}
+            {cfg.shortLabel}
             <span className="tabular-nums text-[11px] font-bold opacity-70">{count.toLocaleString()}</span>
           </button>
         );
@@ -279,16 +282,25 @@ export function BacklogSection() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
+  // ─── Gate: classification runs only on explicit user request ──────────────
+  const [hasClassified, setHasClassified] = useState(false);
+
+  // Reset gate when new reviews arrive
+  useEffect(() => {
+    setHasClassified(false);
+    setActiveCategories(new Set());
+  }, [reviews]);
+
   // ─── Classify synchronously (local rule-based, instant) ───────────────────
   const classifiedReviews = useMemo<ClassifiedReview[]>(() => {
-    if (reviews.length === 0) return [];
+    if (!hasClassified || reviews.length === 0) return [];
     const results = classifyBatch(reviews);
     return reviews.map((r, i) => ({
       ...r,
       problem_categories: results[i],
       classification_status: "classified" as const,
     }));
-  }, [reviews]);
+  }, [reviews, hasClassified]);
 
   // ─── Compute category stats ────────────────────────────────────────────────
   const classified = classifiedReviews;
@@ -323,7 +335,7 @@ export function BacklogSection() {
       const wordFreq = new Map<string, number>();
       for (const rev of catRevs) {
         const words = rev.review.toLowerCase().match(/[a-z]{4,}/g) ?? [];
-        const STOPWORDS = new Set(["this", "that", "with", "have", "from", "they", "will", "been", "were", "your", "more", "when", "then", "than", "what", "just", "like", "also", "about", "very", "some", "into", "does", "dont", "cant", "which"]);
+        const STOPWORDS = new Set(["che", "non", "per", "con", "una", "uno", "gli", "del", "della", "delle", "dei", "dal", "dalla", "nel", "nella", "sul", "sulla", "sono", "questo", "questa", "questi", "queste", "anche", "come", "quando", "dove", "cosa", "tutto", "tutti", "tutte", "molto", "trop", "avevo", "aveva", "hanno", "fare", "fatto", "dopo", "prima", "sempre", "solo", "mai", "ancora", "mais", "mais", "pero", "pero", "very", "this", "that", "with", "have", "from", "just", "like", "also", "what", "does", "dont", "cant"]);
         for (const w of words) {
           if (!STOPWORDS.has(w)) wordFreq.set(w, (wordFreq.get(w) ?? 0) + 1);
         }
@@ -392,9 +404,52 @@ export function BacklogSection() {
       {/* Page header */}
       <div className="mb-6">
         <h1 className="text-[22px] font-bold text-text-primary tracking-tight mb-1">Backlog</h1>
-        <p className="text-sm text-text-secondary">Problem categories extracted from reviews to inform your next sprint</p>
+        <p className="text-sm text-text-secondary">Categorie di problemi estratte dalle recensioni per il prossimo sprint</p>
       </div>
 
+      {/* ─── CTA gate ────────────────────────────────────────────────────────── */}
+      {!hasClassified && (
+        <div className="flex flex-col items-center justify-center py-20 gap-5 rounded-2xl border border-dashed border-border bg-bg-secondary text-center">
+          <div className="w-14 h-14 rounded-2xl bg-bg-primary border border-border flex items-center justify-center text-3xl shadow-sm">
+            🗂
+          </div>
+          <div>
+            <p className="text-[17px] font-semibold text-text-primary mb-1">
+              Classifica {reviews.length.toLocaleString()} recensioni
+            </p>
+            <p className="text-sm text-text-tertiary max-w-sm mx-auto mb-4">
+              Analisi locale con stemming italiano — nessuna API richiesta.
+            </p>
+            {/* Category pills */}
+            <div className="flex flex-wrap justify-center gap-1.5 mb-1">
+              {ALL_CATEGORIES.map((cat) => (
+                <span
+                  key={cat}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-full border"
+                  style={{
+                    color: CATEGORY_CONFIG[cat].color,
+                    backgroundColor: CATEGORY_CONFIG[cat].bg,
+                    borderColor: CATEGORY_CONFIG[cat].border,
+                  }}
+                >
+                  {CATEGORY_CONFIG[cat].label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setHasClassified(true)}
+            className="px-6 py-3 text-sm font-semibold text-white bg-text-primary rounded-pill hover:opacity-90 active:scale-[0.97] transition-all shadow-sm"
+          >
+            Get Clusterization
+          </button>
+        </div>
+      )}
+
+      {/* ─── Full body (only after classification) ───────────────────────────── */}
+      {hasClassified && (
+        <>
       {/* Summary bar */}
       <div className="mb-6">
         <SummaryBar
@@ -510,6 +565,8 @@ export function BacklogSection() {
           </>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

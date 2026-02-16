@@ -6,37 +6,37 @@ export const CATEGORY_CONFIG: Record<
   ProblemCategory,
   { label: string; shortLabel: string; color: string; bg: string; border: string }
 > = {
-  TECHNICAL: {
-    label: "Technical",
-    shortLabel: "Technical",
+  BUGS_TECNICI: {
+    label: "Bugs Tecnici",
+    shortLabel: "Bug",
     color: "#dc2626",
     bg: "rgba(239,68,68,0.10)",
     border: "rgba(239,68,68,0.22)",
   },
-  DESIGN: {
-    label: "Design",
-    shortLabel: "Design",
+  ONBOARDING_SETUP: {
+    label: "Onboarding",
+    shortLabel: "Onboarding",
     color: "#7c3aed",
     bg: "rgba(124,58,237,0.10)",
     border: "rgba(124,58,237,0.22)",
   },
-  CUSTOMER_EXPERIENCE: {
-    label: "CX",
-    shortLabel: "CX",
+  UX_USABILITA: {
+    label: "UX / Usabilità",
+    shortLabel: "UX",
     color: "#d97706",
     bg: "rgba(217,119,6,0.10)",
     border: "rgba(217,119,6,0.22)",
   },
-  PRICING: {
-    label: "Pricing",
-    shortLabel: "Pricing",
+  FEATURES_FUNZIONALITA: {
+    label: "Funzionalità",
+    shortLabel: "Feature",
     color: "#ca8a04",
     bg: "rgba(202,138,4,0.10)",
     border: "rgba(202,138,4,0.22)",
   },
-  PERFORMANCE: {
-    label: "Performance",
-    shortLabel: "Perf",
+  CUSTOMER_SUPPORT: {
+    label: "Supporto",
+    shortLabel: "Supporto",
     color: "#2563eb",
     bg: "rgba(37,99,235,0.10)",
     border: "rgba(37,99,235,0.22)",

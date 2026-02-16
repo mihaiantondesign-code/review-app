@@ -1,218 +1,242 @@
 /**
- * Local rule-based problem category classifier.
- * No API key required — runs entirely in the browser.
+ * Classificatore locale di problemi — italiano.
  *
- * Accuracy vs LLM: ~85-90% for clear-cut reviews. Misses nuanced phrasing
- * but handles the vast majority of app store complaint vocabulary correctly.
+ * Pipeline:
+ *   1. normalize   — lowercase + strip accenti (NFD→ASCII) + pulizia
+ *   2. tokenize    — split su whitespace
+ *   3. softStem    — rimuove suffissi italiani comuni
+ *   4. fuzzyMatch  — Jaro-Winkler (no dipendenze esterne), soglia 0.85
+ *
+ * Le keyword nel dizionario sono già in forma stem-ridotta, quindi la
+ * soglia alta cattura le forme flesse senza falsi positivi.
  */
 
 import type { ProblemCategory } from "@/types";
 
-// ─── Keyword dictionaries ──────────────────────────────────────────────────
-// Each array is ordered from more specific (multi-word) to less specific (single).
-// Multi-word phrases are checked first as substrings; single words are checked
-// against the tokenised word list to avoid false partial matches.
+// ─── Normalize ────────────────────────────────────────────────────────────────
 
-const RULES: Record<ProblemCategory, string[]> = {
-  TECHNICAL: [
-    // multi-word first
-    "doesn't work", "does not work", "won't open", "wont open",
-    "won't load", "wont load", "can't log in", "cant log in",
-    "can't login", "cant login", "can't sign in", "cant sign in",
-    "not working", "keeps crashing", "app crashes", "it crashed",
-    "force close", "force quit", "black screen", "blank screen",
-    "white screen", "error message", "error code",
-    "keeps freezing", "app freezes", "login failed", "sign in failed",
-    "sync failed", "sync issue", "sync problem",
-    "data loss", "lost my data", "lost data",
-    "broken feature", "feature broken", "feature doesn't work",
-    "not syncing", "wont sync",
-    // single words (checked as whole words)
-    "crash", "crashes", "crashed", "crashing",
-    "bug", "bugs", "buggy",
-    "glitch", "glitches", "glitchy",
-    "error", "errors",
-    "freeze", "freezes", "freezing", "frozen",
-    "broken",
-    "unresponsive",
-  ],
-
-  DESIGN: [
-    "hard to find", "hard to use", "hard to navigate",
-    "confusing interface", "confusing ui", "confusing navigation",
-    "confusing layout", "poor design", "bad design",
-    "not intuitive", "unintuitive", "not user friendly",
-    "user friendly", // contextual — we detect "not user friendly"
-    "poor layout", "bad layout", "cluttered",
-    "difficult to navigate", "difficult to use",
-    "can't find", "cant find",
-    "where is", "where's the",
-    "ui is", "ux is",
-    "visual bug",
-    // single words
-    "confusing",
-    "unintuitive",
-    "inaccessible",
-    "accessibility",
-    "navigation",
-    "layout",
-    "interface",
-    "cluttered",
-    "messy",
-    "overcomplicated",
-    "complicated",
-  ],
-
-  CUSTOMER_EXPERIENCE: [
-    "no response", "no reply",
-    "customer support", "customer service",
-    "support team", "support staff",
-    "never responded", "didn't respond", "didnt respond",
-    "refund denied", "won't refund", "wont refund",
-    "can't get refund", "cant get refund",
-    "account banned", "account suspended", "account deleted",
-    "account problem", "account issue",
-    "missing feature", "features missing",
-    "onboarding", "getting started",
-    "subscription cancelled", "subscription canceled",
-    "charged without", "charged me",
-    // single words
-    "refund", "refunds",
-    "support",
-    "unresponsive",
-    "unhelpful",
-    "ignored",
-    "scam",
-    "fraud",
-    "deceptive",
-  ],
-
-  PRICING: [
-    "too expensive", "very expensive", "way too expensive",
-    "not worth", "not worth the", "not worth it",
-    "overpriced", "over priced",
-    "price increase", "price hike",
-    "hidden fee", "hidden fees", "hidden charge", "hidden charges",
-    "unexpected charge", "unexpected charges",
-    "charged me", "charged without",
-    "paywalled", "pay wall", "paywall",
-    "subscription fee", "subscription cost", "subscription price",
-    "free trial", // context matters but often a complaint
-    "free version", "free tier",
-    "pay to", "paid for", "paying for",
-    "monthly fee", "annual fee", "yearly fee",
-    "in app purchase", "in-app purchase",
-    "microtransaction", "microtransactions",
-    // single words
-    "expensive",
-    "costly",
-    "overpriced",
-    "subscription",
-    "payment",
-    "billing",
-    "charged",
-    "charge",
-    "pricing",
-    "price",
-  ],
-
-  PERFORMANCE: [
-    "takes forever", "takes too long",
-    "slow to load", "slow loading", "loads slowly",
-    "very slow", "extremely slow", "super slow", "really slow",
-    "lagging", "lots of lag",
-    "drains battery", "battery drain", "kills battery",
-    "uses too much data", "uses a lot of data",
-    "high memory", "uses too much memory",
-    "takes up storage",
-    // single words
-    "slow",
-    "lag",
-    "laggy",
-    "sluggish",
-    "unresponsive",
-    "stuttering",
-    "stutter",
-    "buffering",
-    "timeout",
-    "hanging",
-    "hangs",
-  ],
-};
-
-// Positive signals — if the review is overwhelmingly positive, skip classification
-const STRONG_POSITIVE = [
-  "love this app", "love the app", "best app", "amazing app",
-  "great app", "excellent app", "fantastic app", "perfect app",
-  "highly recommend", "10/10", "5 stars", "five stars",
-];
-
-// ─── Helpers ───────────────────────────────────────────────────────────────
-
-function normalise(text: string): string {
+/**
+ * Lowercase + deaccent (NFD → keep only ASCII letters/digits/spaces).
+ * Handles Italian accented chars: à è é ì ò ù → a e e i o u
+ */
+function normalize(text: string): string {
   return text
     .toLowerCase()
-    // expand common contractions / shortenings
-    .replace(/doesn't/g, "doesnt")
-    .replace(/don't/g, "dont")
-    .replace(/won't/g, "wont")
-    .replace(/can't/g, "cant")
-    .replace(/didn't/g, "didnt")
-    .replace(/isn't/g, "isnt")
-    .replace(/wasn't/g, "wasnt")
-    .replace(/haven't/g, "havent")
-    .replace(/wouldn't/g, "wouldnt")
-    .replace(/couldn't/g, "couldnt")
-    // keep only letters, digits, spaces
-    .replace(/[^a-z0-9 ]/g, " ")
+    // NFD decomposition: "à" → "a" + combining grave → strip combining chars
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip combining diacritics
+    .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function tokenise(text: string): Set<string> {
-  return new Set(text.split(" ").filter(Boolean));
+// ─── Soft stemmer ─────────────────────────────────────────────────────────────
+
+const SUFFIXES = [
+  "azione", "azioni", "mente", "abile", "ibile",
+  "ando", "endo", "ato", "ata", "ati", "ate",
+  "oso", "osa", "osi", "ose",
+  "are", "ere", "ire",
+  "ico", "ica", "ici", "iche",
+  "ale", "ali",
+  "ivo", "iva", "ivi", "ive",
+];
+
+/** Rimuove il suffisso più lungo trovato (min 3 chars di stem residuo) */
+function softStem(word: string): string {
+  for (const suf of SUFFIXES) {
+    if (word.endsWith(suf) && word.length - suf.length >= 3) {
+      return word.slice(0, word.length - suf.length);
+    }
+  }
+  return word;
 }
 
+// ─── Jaro-Winkler ─────────────────────────────────────────────────────────────
+
+function jaro(s1: string, s2: string): number {
+  if (s1 === s2) return 1;
+  const len1 = s1.length;
+  const len2 = s2.length;
+  if (len1 === 0 || len2 === 0) return 0;
+
+  const matchWindow = Math.floor(Math.max(len1, len2) / 2) - 1;
+  const s1Matches = new Array<boolean>(len1).fill(false);
+  const s2Matches = new Array<boolean>(len2).fill(false);
+
+  let matches = 0;
+  let transpositions = 0;
+
+  for (let i = 0; i < len1; i++) {
+    const start = Math.max(0, i - matchWindow);
+    const end = Math.min(i + matchWindow + 1, len2);
+    for (let j = start; j < end; j++) {
+      if (s2Matches[j] || s1[i] !== s2[j]) continue;
+      s1Matches[i] = true;
+      s2Matches[j] = true;
+      matches++;
+      break;
+    }
+  }
+
+  if (matches === 0) return 0;
+
+  let k = 0;
+  for (let i = 0; i < len1; i++) {
+    if (!s1Matches[i]) continue;
+    while (!s2Matches[k]) k++;
+    if (s1[i] !== s2[k]) transpositions++;
+    k++;
+  }
+
+  return (matches / len1 + matches / len2 + (matches - transpositions / 2) / matches) / 3;
+}
+
+function jaroWinkler(s1: string, s2: string, p = 0.1): number {
+  const j = jaro(s1, s2);
+  let prefix = 0;
+  for (let i = 0; i < Math.min(4, s1.length, s2.length); i++) {
+    if (s1[i] === s2[i]) prefix++;
+    else break;
+  }
+  return j + prefix * p * (1 - j);
+}
+
+// ─── Fuzzy match ──────────────────────────────────────────────────────────────
+
+/** Vero se token è sufficientemente simile a keyword (Jaro-Winkler ≥ soglia) */
+function fuzzyMatch(token: string, keyword: string, threshold = 0.85): boolean {
+  if (token === keyword) return true;
+  // Substring esatta prima (gestisce keyword multi-word già unite)
+  if (token.includes(keyword) || keyword.includes(token)) return true;
+  return jaroWinkler(token, keyword) >= threshold;
+}
+
+// ─── Keyword dictionary (stem-ridotto, italiano) ──────────────────────────────
+
+/**
+ * Keyword già ridotte alla forma stem/radice.
+ * Le frasi multi-parola sono stringhe separate da spazio e vengono cercate
+ * come sotto-sequenza nel testo normalizzato; le parole singole vengono
+ * confrontate token per token con fuzzyMatch.
+ */
+const KEYWORDS: Record<ProblemCategory, string[]> = {
+  BUGS_TECNICI: [
+    // frasi multi-word (substring nel testo normalizzato)
+    "non funzion", "non si apre", "non caric", "non si connett",
+    "schermata nera", "schermo nero", "schermata bianca", "errore di connession",
+    "ha smesso di funzion", "continua a chiudersi", "si blocca continuamente",
+    "perdita di dati", "dati persi",
+    // parole singole (fuzzy token match)
+    "crash", "crashato", "crashat", "bloccat", "blocc",
+    "errore", "errat", "bug",
+    "glitch", "freezat", "congelat",
+    "rott", "guast",
+    "instabil", "difett",
+  ],
+  ONBOARDING_SETUP: [
+    // frasi
+    "primo accesso", "prima volta", "non riesco a registr", "non riesco ad acceder",
+    "configurazion difficil", "difficile da configurar", "difficile da installar",
+    "non riesco ad entrar", "non riesco a far partir",
+    "codice di verific", "verifica email", "verifica telefon",
+    "account non verific",
+    // token
+    "registrazion", "onboard", "configurazion", "installazion",
+    "account", "accessibil", "acceder", "autenticazion",
+    "setup", "configurar", "attivar",
+  ],
+  UX_USABILITA: [
+    // frasi
+    "difficile da usar", "difficile da navigar", "interfaccia confusa",
+    "non intuitiv", "non user friendly", "difficile da capir",
+    "difficile trovare", "non si trova", "dove si trova",
+    "grafica brutta", "design brutto", "layout confuso",
+    "troppo complicat", "poco chiaro",
+    // token
+    "interfaccia", "usabilita", "naviga", "grafic",
+    "design", "layout", "intuitiv", "semplicita",
+    "complicat", "confus", "disorientant",
+    "accessibil", "leggibilita",
+  ],
+  FEATURES_FUNZIONALITA: [
+    // frasi
+    "funzionalita mancante", "funzione mancante", "non c e la funzione",
+    "non ha la funzione", "manca la possibilita", "manca l opzione",
+    "vorrei che ci fosse", "sarebbe utile avere", "non si puo",
+    "impossibile fare", "non permette di",
+    "funzione assente", "feature mancante",
+    // token
+    "mancant", "assent", "funzionalita", "funzion",
+    "opzion", "possibilita", "aggiunger", "miglior",
+    "aggiornament", "sviluppar", "implementar",
+    "richiesta", "necessari",
+  ],
+  CUSTOMER_SUPPORT: [
+    // frasi
+    "assistenza clienti", "servizio clienti", "customer care",
+    "nessuna risposta", "non rispondono", "non mi hanno risposto",
+    "supporto inutile", "assistenza pessima", "supporto lento",
+    "rimborso negato", "non rimborsano", "non vogliono rimborsare",
+    "account sospeso", "account bannato", "account bloccato",
+    "account cancellat",
+    // token
+    "assistenza", "support", "rimborso",
+    "risposta", "contatto", "operatore",
+    "lamentela", "reclamo", "segnalazion",
+    "ignor", "abbandono",
+  ],
+};
+
+// ─── Classifier ───────────────────────────────────────────────────────────────
+
+/** Controlla se una frase multi-word è presente come substring nel testo */
 function hasPhrase(text: string, phrase: string): boolean {
   return text.includes(phrase);
 }
 
-function hasWord(tokens: Set<string>, word: string): boolean {
-  return tokens.has(word);
+/**
+ * Controlla se almeno un token nel testo fa fuzzy-match con la keyword stem.
+ * Per keyword multi-parola (spazio) usa substring check diretto.
+ */
+function matchesKeyword(tokens: string[], stemmedTokens: string[], kw: string): boolean {
+  if (kw.includes(" ")) {
+    // multi-word: già gestite da hasPhrase sopra, ma le gestiamo anche qui
+    return false; // handled separately via hasPhrase
+  }
+  for (const stemTok of stemmedTokens) {
+    if (fuzzyMatch(stemTok, kw)) return true;
+  }
+  // also try raw tokens for exact/substring matches
+  for (const tok of tokens) {
+    if (tok === kw || tok.startsWith(kw) || kw.startsWith(tok)) return true;
+  }
+  return false;
 }
-
-// ─── Main classifier ────────────────────────────────────────────────────────
 
 export function classifyReviewProblems(
   title: string,
   body: string
 ): ProblemCategory[] {
-  const raw = `${title} ${body}`;
-  const text = normalise(raw);
-  const tokens = tokenise(text);
-
-  // Short-circuit: clearly positive with no complaints
-  if (STRONG_POSITIVE.some((p) => hasPhrase(text, normalise(p)))) {
-    // Only skip if rating context would support it — since we don't have
-    // the rating here, we still run the classifier but will naturally get []
-    // if there are no problem keywords.
-  }
+  const raw = normalize(`${title} ${body}`);
+  const tokens = raw.split(" ").filter(Boolean);
+  const stemmedTokens = tokens.map(softStem);
 
   const matched: ProblemCategory[] = [];
 
-  for (const [category, keywords] of Object.entries(RULES) as [ProblemCategory, string[]][]) {
+  for (const [category, keywords] of Object.entries(KEYWORDS) as [ProblemCategory, string[]][]) {
     let hit = false;
 
     for (const kw of keywords) {
       if (kw.includes(" ")) {
-        // Multi-word phrase: substring match on normalised full text
-        if (hasPhrase(text, normalise(kw))) {
+        // Frase multi-word: cerca come substring nel testo normalizzato
+        if (hasPhrase(raw, kw)) {
           hit = true;
           break;
         }
       } else {
-        // Single word: whole-word token match
-        if (hasWord(tokens, kw)) {
+        // Parola singola (già stem-ridotta): fuzzy token match
+        if (matchesKeyword(tokens, stemmedTokens, kw)) {
           hit = true;
           break;
         }
@@ -222,43 +246,10 @@ export function classifyReviewProblems(
     if (hit) matched.push(category);
   }
 
-  // De-noise: "navigation", "layout", "interface" alone on positive reviews
-  // would be false positives. Apply a light rating heuristic via word signals:
-  const positiveSignals = ["love", "great", "excellent", "amazing", "perfect", "best", "wonderful", "fantastic"];
-  const negativeSignals = ["hate", "terrible", "awful", "horrible", "worst", "useless", "garbage", "trash", "bad", "poor", "disappointing", "disappointed"];
-
-  const positiveCount = positiveSignals.filter((w) => tokens.has(w)).length;
-  const negativeCount = negativeSignals.filter((w) => tokens.has(w)).length;
-
-  // If the review has strong positive sentiment and no negative signals,
-  // and it only matched "soft" design keywords (navigation/layout/interface alone),
-  // strip the DESIGN match to reduce false positives.
-  if (positiveCount > 0 && negativeCount === 0) {
-    const softDesignOnly =
-      matched.length === 1 &&
-      matched[0] === "DESIGN" &&
-      !["confusing", "unintuitive", "hard to", "difficult", "cant find", "poor design", "bad design", "cluttered", "messy"].some(
-        (soft) => hasPhrase(text, soft) || (soft.split(" ").length === 1 && hasWord(tokens, soft))
-      );
-    if (softDesignOnly) {
-      matched.splice(matched.indexOf("DESIGN"), 1);
-    }
-
-    // Similarly strip PRICING if only soft tokens matched on a positive review
-    const softPricingOnly =
-      matched.includes("PRICING") &&
-      !["expensive", "overpriced", "too expensive", "hidden", "unexpected", "charged", "paywall", "overpriced"].some(
-        (soft) => hasPhrase(text, soft) || (soft.split(" ").length === 1 && hasWord(tokens, soft))
-      );
-    if (softPricingOnly) {
-      matched.splice(matched.indexOf("PRICING"), 1);
-    }
-  }
-
   return matched;
 }
 
-/** Classify an array of { title, body } objects synchronously */
+/** Classifica un array di { title, review } in modo sincrono */
 export function classifyBatch(
   reviews: { title: string; review: string }[]
 ): ProblemCategory[][] {
