@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCompare } from "@/hooks/useCompare";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -425,11 +425,13 @@ function HeadToHead({
   const appList = Object.entries(compData).filter(([, reviews]) => reviews.length > 0);
 
   const [themes, setThemes] = useState<Record<string, { problems: Theme[]; wins: Theme[] }>>({});
-  const [loaded, setLoaded] = useState(false);
+  const [loadedKey, setLoadedKey] = useState<string>("");
 
-  // Load themes on mount
-  useMemo(() => {
-    if (loaded) return;
+  // Stable key for the current app list — re-fetch only when apps change
+  const appListKey = appList.map(([aid]) => aid).sort().join(",");
+
+  useEffect(() => {
+    if (appList.length < 2 || appListKey === loadedKey) return;
     const loadAll = async () => {
       const result: Record<string, { problems: Theme[]; wins: Theme[] }> = {};
       for (const [aid, reviews] of appList) {
@@ -444,10 +446,11 @@ function HeadToHead({
         }
       }
       setThemes(result);
-      setLoaded(true);
+      setLoadedKey(appListKey);
     };
-    if (appList.length >= 2) loadAll();
-  }, [appList.length]);
+    loadAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appListKey]);
 
   if (appList.length < 2) {
     return (

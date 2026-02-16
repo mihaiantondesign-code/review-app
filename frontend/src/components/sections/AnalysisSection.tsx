@@ -63,68 +63,69 @@ const CATEGORY_ICONS: Record<ProblemCategory, ReactElement> = {
 // ─── Keyword highlight util ───────────────────────────────────────────────────
 
 /**
- * Returns an array of { text, highlight } segments.
- * Highlights any occurrence of the matched keyword stems in the original text
- * using case-insensitive prefix/substring matching.
+ * Returns an array of { text, highlightBg, highlightColor } segments.
+ * Accepts per-category keyword layers so each match gets the category's color.
  */
 function buildHighlightSegments(
   text: string,
-  keywordStems: string[]
-): { text: string; highlight: boolean }[] {
-  if (!keywordStems.length) return [{ text, highlight: false }];
+  layers: { stems: string[]; bg: string; color: string }[]
+): { text: string; highlightBg: string | null; highlightColor: string | null }[] {
+  if (!layers.length) return [{ text, highlightBg: null, highlightColor: null }];
 
-  // Normalize accents helper (mirror of classifier's normalize, without full cleanup)
+  // Normalize accents helper (mirror of classifier's normalize)
   const normChar = (s: string) =>
     s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const normText = normChar(text);
 
-  // Build match spans [start, end) on normalized text
-  const spans: [number, number][] = [];
-  for (const stem of keywordStems) {
-    const normStem = normChar(stem);
-    if (!normStem) continue;
-    let pos = 0;
-    while (pos < normText.length) {
-      const idx = normText.indexOf(normStem, pos);
-      if (idx === -1) break;
-      // For single-word stems: only highlight if it's a word boundary or prefix
-      const isPhrase = stem.includes(" ");
-      if (isPhrase) {
-        spans.push([idx, idx + normStem.length]);
-      } else {
-        // word boundary: char before must be non-letter, char after can be anything
-        const before = idx === 0 ? "" : normText[idx - 1];
-        if (!before || !/[a-z]/.test(before)) {
-          spans.push([idx, idx + normStem.length]);
+  // Build match spans [start, end, bg, color) — first layer wins on overlap
+  type Span = [number, number, string, string];
+  const spans: Span[] = [];
+
+  for (const { stems, bg, color } of layers) {
+    for (const stem of stems) {
+      const normStem = normChar(stem);
+      if (!normStem) continue;
+      let pos = 0;
+      while (pos < normText.length) {
+        const idx = normText.indexOf(normStem, pos);
+        if (idx === -1) break;
+        const isPhrase = stem.includes(" ");
+        if (isPhrase) {
+          spans.push([idx, idx + normStem.length, bg, color]);
+        } else {
+          const before = idx === 0 ? "" : normText[idx - 1];
+          if (!before || !/[a-z]/.test(before)) {
+            spans.push([idx, idx + normStem.length, bg, color]);
+          }
         }
+        pos = idx + normStem.length;
       }
-      pos = idx + normStem.length;
     }
   }
 
-  if (!spans.length) return [{ text, highlight: false }];
+  if (!spans.length) return [{ text, highlightBg: null, highlightColor: null }];
 
-  // Merge overlapping spans
+  // Sort by start, then merge overlapping spans (keep first-encountered color)
   spans.sort((a, b) => a[0] - b[0]);
-  const merged: [number, number][] = [];
-  for (const [s, e] of spans) {
-    if (merged.length && s <= merged[merged.length - 1][1]) {
+  const merged: Span[] = [];
+  for (const [s, e, bg, color] of spans) {
+    if (merged.length && s < merged[merged.length - 1][1]) {
       merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], e);
     } else {
-      merged.push([s, e]);
+      merged.push([s, e, bg, color]);
     }
   }
 
-  // Build segments from original text using the span positions
-  const result: { text: string; highlight: boolean }[] = [];
+  // Build segments from original text
+  const result: { text: string; highlightBg: string | null; highlightColor: string | null }[] = [];
   let cursor = 0;
-  for (const [s, e] of merged) {
-    if (s > cursor) result.push({ text: text.slice(cursor, s), highlight: false });
-    result.push({ text: text.slice(s, e), highlight: true });
+  for (const [s, e, bg, color] of merged) {
+    if (s > cursor) result.push({ text: text.slice(cursor, s), highlightBg: null, highlightColor: null });
+    result.push({ text: text.slice(s, e), highlightBg: bg, highlightColor: color });
     cursor = e;
   }
-  if (cursor < text.length) result.push({ text: text.slice(cursor), highlight: false });
+  if (cursor < text.length) result.push({ text: text.slice(cursor), highlightBg: null, highlightColor: null });
   return result;
 }
 
@@ -132,28 +133,29 @@ function buildHighlightSegments(
 
 function HighlightedText({
   text,
-  keywordStems,
+  layers,
   className,
 }: {
   text: string;
-  keywordStems: string[];
+  layers: { stems: string[]; bg: string; color: string }[];
   className?: string;
 }) {
   const segments = useMemo(
-    () => buildHighlightSegments(text, keywordStems),
-    [text, keywordStems]
+    () => buildHighlightSegments(text, layers),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [text, JSON.stringify(layers)]
   );
 
   return (
     <span className={className}>
       {segments.map((seg, i) =>
-        seg.highlight ? (
+        seg.highlightBg ? (
           <mark
             key={i}
             className="rounded-sm px-0.5 py-px"
             style={{
-              backgroundColor: "rgba(250,204,21,0.35)",
-              color: "inherit",
+              backgroundColor: seg.highlightBg,
+              color: seg.highlightColor ?? "inherit",
               fontWeight: 600,
             }}
           >
@@ -179,9 +181,11 @@ interface ClassifiedReviewWithEvidence extends Review {
 
 function BacklogReviewCard({
   review,
+  activeCategories,
   onCategoryClick,
 }: {
   review: ClassifiedReviewWithEvidence;
+  activeCategories: Set<ProblemCategory>;
   onCategoryClick: (cat: ProblemCategory) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -190,15 +194,22 @@ function BacklogReviewCard({
   const sentimentLabel = review.rating >= 4 ? "Positive" : review.rating <= 2 ? "Negative" : "Neutral";
   const sentimentColor = review.rating >= 4 ? "text-[#34C759]" : review.rating <= 2 ? "text-[#FF3B30]" : "text-text-secondary";
 
-  // Collect all keyword stems across all matched categories for this review
-  const allStems = useMemo(() => {
-    const stems: string[] = [];
-    for (const cat of review.problem_categories) {
+  // Which categories to show: if filter is active, only show matched active categories
+  const visibleCategories = useMemo(() => {
+    if (activeCategories.size === 0) return review.problem_categories;
+    return review.problem_categories.filter((cat) => activeCategories.has(cat));
+  }, [review.problem_categories, activeCategories]);
+
+  // Build per-category color layers for highlights (only visible categories)
+  const highlightLayers = useMemo(() => {
+    return visibleCategories.flatMap((cat) => {
       const kws = review.matchedKeywords[cat];
-      if (kws) stems.push(...kws);
-    }
-    return [...new Set(stems)];
-  }, [review]);
+      if (!kws || kws.length === 0) return [];
+      const cfg = CATEGORY_CONFIG[cat];
+      // Use a slightly stronger bg for readability
+      return [{ stems: kws, bg: cfg.bg, color: cfg.color }];
+    });
+  }, [visibleCategories, review.matchedKeywords]);
 
   return (
     <div className="bg-bg-primary rounded-xl border border-border p-5" style={{ boxShadow: "var(--shadow-sm)" }}>
@@ -209,14 +220,14 @@ function BacklogReviewCard({
           </div>
           <h4 className="text-[16px] font-semibold text-[#0051B3] mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
           <p className="text-sm text-text-secondary leading-relaxed">
-            <HighlightedText text={truncated} keywordStems={allStems} />
+            <HighlightedText text={truncated} layers={highlightLayers} />
             {isLong && (
               <button onClick={() => setExpanded((v) => !v)} className="ml-1 text-accent text-sm font-medium hover:underline">
                 {expanded ? "less" : "more"}
               </button>
             )}
           </p>
-          {review.needsReview && review.problem_categories.length > 0 && (
+          {review.needsReview && visibleCategories.length > 0 && (
             <p className="mt-1.5 text-[11px] font-medium text-[#b45309]">
               ⚠ Verifica consigliata
             </p>
@@ -235,7 +246,7 @@ function BacklogReviewCard({
             <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-0.5">Sentiment</p>
             <p className={`text-sm font-medium ${sentimentColor}`}>{sentimentLabel}</p>
           </div>
-          {review.problem_categories.length > 0 && (
+          {visibleCategories.length > 0 && (
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary">Problem</p>
@@ -254,7 +265,7 @@ function BacklogReviewCard({
                 </span>
               </div>
               <div className="flex flex-wrap gap-1">
-                {review.problem_categories.map((cat) => (
+                {visibleCategories.map((cat) => (
                   <ProblemChip key={cat} category={cat} size="xs" onClick={() => onCategoryClick(cat)} />
                 ))}
               </div>
@@ -718,6 +729,7 @@ export function AnalysisSection() {
                     <BacklogReviewCard
                       key={`${rev.date}-${rev.author}-${i}`}
                       review={rev}
+                      activeCategories={activeCategories}
                       onCategoryClick={(cat) => setActiveCategories(new Set([cat]))}
                     />
                   ))}
