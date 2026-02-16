@@ -7,6 +7,7 @@ import { AppStoreSection } from "@/components/sections/AppStoreSection";
 import { TrustpilotSection } from "@/components/sections/TrustpilotSection";
 import { ComparisonSection } from "@/components/sections/ComparisonSection";
 import { InsightsSection } from "@/components/sections/InsightsSection";
+import { BacklogSection } from "@/components/sections/BacklogSection";
 import { AppMultiSelectPicker } from "@/components/shared/AppMultiSelectPicker";
 import { CountryField } from "@/components/shared/CountryField";
 import { FeedbackModal, useFeedbackTrigger } from "@/components/shared/FeedbackModal";
@@ -178,6 +179,7 @@ export default function Home() {
               {activeSection === "trustpilot" && <TrustpilotSection />}
               {activeSection === "comparison" && <ComparisonSection />}
               {activeSection === "insights" && <InsightsSection />}
+              {activeSection === "backlog" && <BacklogSection />}
             </div>
           </div>
         </div>

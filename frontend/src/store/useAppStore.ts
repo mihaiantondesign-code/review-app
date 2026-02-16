@@ -6,6 +6,7 @@ import type {
   FetchProgress,
   ActiveSection,
   FetchMode,
+  ClassifiedReview,
 } from "@/types";
 
 interface CompData {
@@ -62,6 +63,12 @@ interface AppState {
   setCountryCode: (c: string) => void;
   fetchMode: FetchMode;
   setFetchMode: (m: FetchMode) => void;
+
+  // Classified reviews (enriched with problem_categories after LLM classification)
+  classifiedReviews: ClassifiedReview[];
+  setClassifiedReviews: (r: ClassifiedReview[]) => void;
+  isClassifying: boolean;
+  setIsClassifying: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -109,4 +116,9 @@ export const useAppStore = create<AppState>((set) => ({
   setCountryCode: (c) => set({ countryCode: c }),
   fetchMode: "time",
   setFetchMode: (m) => set({ fetchMode: m }),
+
+  classifiedReviews: [],
+  setClassifiedReviews: (r) => set({ classifiedReviews: r }),
+  isClassifying: false,
+  setIsClassifying: (v) => set({ isClassifying: v }),
 }));

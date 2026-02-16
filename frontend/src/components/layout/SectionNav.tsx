@@ -9,6 +9,7 @@ const sections: { value: ActiveSection; label: string }[] = [
   { value: "trustpilot", label: "Trustpilot" },
   { value: "comparison", label: "Comparison" },
   { value: "insights", label: "Insights" },
+  { value: "backlog", label: "Backlog" },
 ];
 
 export function SectionNav() {
