@@ -284,7 +284,7 @@ function ReviewListings({ reviews, onDownload }: { reviews: Review[]; onDownload
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search reviews…"
-          className="w-full sm:flex-1 sm:max-w-[260px] px-4 py-2.5 text-sm border border-border-strong rounded-xl bg-bg-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all"
+          className="w-full sm:flex-1 sm:max-w-[260px] px-4 py-2.5 min-h-[44px] text-sm border border-border-strong rounded-xl bg-bg-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all"
         />
         <span className="hidden sm:block text-sm text-text-tertiary tabular-nums ml-auto">{filtered.length.toLocaleString()} reviews</span>
       </div>

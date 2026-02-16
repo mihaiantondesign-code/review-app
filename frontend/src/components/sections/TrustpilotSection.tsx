@@ -112,7 +112,7 @@ function TrustpilotSearchPicker({ selected, onSelect, onClear }: {
         onFocus={() => setOpen(true)}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
         placeholder="Search company or paste URL…"
-        className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
+        className="w-full px-4 py-3 min-h-[44px] text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all"
       />
       {open && query.trim() && (
         <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-bg-primary border border-border rounded-sm shadow-lg overflow-hidden">
@@ -194,7 +194,7 @@ export function TrustpilotSection() {
           <div>
             <label className="block text-[15px] font-semibold text-text-primary mb-2">Language</label>
             <select value={language} onChange={(e) => setLanguage(e.target.value)}
-              className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all">
+              className="w-full px-4 py-3 min-h-[44px] text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all">
               {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
           </div>
@@ -211,7 +211,7 @@ export function TrustpilotSection() {
           <div>
             <label className="block text-[15px] font-semibold text-text-primary mb-2">Max pages</label>
             <input type="number" min={1} max={50} value={maxPages} onChange={(e) => setMaxPages(Number(e.target.value))}
-              className="w-full px-4 py-3 text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all" />
+              className="w-full px-4 py-3 min-h-[44px] text-[15px] border border-border-strong rounded-xl bg-bg-primary focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all" />
           </div>
         </div>
 
