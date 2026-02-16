@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MetricCard } from "@/components/shared/MetricCard";
 import { AdjustedRatingCard } from "./AdjustedRatingCard";
 import { SentimentBreakdown } from "./SentimentBreakdown";
 import { ThemesList } from "./ThemesList";
@@ -75,16 +74,31 @@ export function InsightsPanel({ reviews, source = "appstore" }: InsightsPanelPro
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <MetricCard label="Average Rating" value={`${avgRating.toFixed(1)} ★`} />
-        <MetricCard label="Positive (4-5★)" value={`${positivePct.toFixed(0)}%`} />
-        <MetricCard label="Negative (1-2★)" value={`${negativePct.toFixed(0)}%`} />
+      <div className="flex items-center gap-5 flex-wrap">
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Avg Rating</p>
+          <p className="text-xl font-bold text-text-primary tabular-nums">{avgRating.toFixed(1)} ★</p>
+        </div>
+        <div className="w-px h-9 bg-border shrink-0" />
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Positive (4-5★)</p>
+          <p className="text-xl font-bold text-positive tabular-nums">{positivePct.toFixed(0)}%</p>
+        </div>
+        <div className="w-px h-9 bg-border shrink-0" />
+        <div>
+          <p className="text-sm text-text-secondary mb-0.5">Negative (1-2★)</p>
+          <p className="text-xl font-bold text-negative tabular-nums">{negativePct.toFixed(0)}%</p>
+        </div>
         {sentiment && (
-          <MetricCard
-            label="Sentiment"
-            value={`${sentimentEmoji[sentiment.label] || ""} ${sentiment.label}`}
-            help={`Score: ${sentiment.score} (positive: ${sentiment.positive}, negative: ${sentiment.negative})`}
-          />
+          <>
+            <div className="w-px h-9 bg-border shrink-0" />
+            <div>
+              <p className="text-sm text-text-secondary mb-0.5">Sentiment</p>
+              <p className="text-xl font-bold text-text-primary tabular-nums">
+                {sentimentEmoji[sentiment.label] || ""} {sentiment.label}
+              </p>
+            </div>
+          </>
         )}
       </div>
 

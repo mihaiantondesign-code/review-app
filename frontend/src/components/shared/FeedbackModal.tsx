@@ -74,7 +74,7 @@ export function FeedbackModal({ show, onClose }: FeedbackModalProps) {
       <div className="relative bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full mx-4 z-10">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-text-tertiary hover:text-text-primary transition-colors text-lg leading-none"
+          className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center rounded-xl text-text-tertiary hover:text-text-primary hover:bg-[rgba(0,0,0,0.04)] transition-colors"
         >
           ✕
         </button>
@@ -96,11 +96,11 @@ export function FeedbackModal({ show, onClose }: FeedbackModalProps) {
               onChange={(e) => setComment(e.target.value)}
               placeholder="Type your idea here..."
               rows={4}
-              className="w-full text-[13px] text-text-primary border border-gray-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#FF2D78]/30 focus:border-[#FF2D78] transition-colors mb-4"
+              className="w-full text-sm text-text-primary border border-gray-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#FF2D78]/30 focus:border-[#FF2D78] transition-colors mb-4"
             />
 
             {status === "error" && (
-              <p className="text-xs text-red-500 mb-3">
+              <p className="text-sm text-red-500 mb-3">
                 Something went wrong. Please try again.
               </p>
             )}
@@ -116,7 +116,7 @@ export function FeedbackModal({ show, onClose }: FeedbackModalProps) {
 
             <button
               onClick={onClose}
-              className="block w-full mt-2 py-2 text-xs text-text-tertiary hover:text-text-primary transition-colors"
+              className="block w-full mt-2 py-3 min-h-[44px] text-sm text-text-tertiary hover:text-text-primary transition-colors"
             >
               Maybe later
             </button>
