@@ -8,8 +8,7 @@ const sections: { value: ActiveSection; label: string }[] = [
   { value: "appstore", label: "App Store" },
   { value: "trustpilot", label: "Trustpilot" },
   { value: "comparison", label: "Comparison" },
-  { value: "insights", label: "Insights" },
-  { value: "backlog", label: "Backlog" },
+  { value: "analysis", label: "Analysis" },
 ];
 
 export function SectionNav() {

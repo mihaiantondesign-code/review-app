@@ -68,7 +68,7 @@ export interface FetchProgress {
   message: string;
 }
 
-export type ActiveSection = "appstore" | "trustpilot" | "comparison" | "insights" | "backlog";
+export type ActiveSection = "appstore" | "trustpilot" | "comparison" | "analysis";
 
 export type ProblemCategory =
   | "BUGS_TECNICI"

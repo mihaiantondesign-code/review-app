@@ -214,39 +214,49 @@ function matchesKeyword(tokens: string[], stemmedTokens: string[], kw: string): 
   return false;
 }
 
+/** Result including matched keywords for highlight */
+export interface ClassifyEvidence {
+  categories: ProblemCategory[];
+  /** Normalized keyword stems/phrases that triggered classification, per category */
+  matchedKeywords: Partial<Record<ProblemCategory, string[]>>;
+}
+
 export function classifyReviewProblems(
   title: string,
   body: string
 ): ProblemCategory[] {
+  return classifyWithEvidence(title, body).categories;
+}
+
+export function classifyWithEvidence(
+  title: string,
+  body: string
+): ClassifyEvidence {
   const raw = normalize(`${title} ${body}`);
   const tokens = raw.split(" ").filter(Boolean);
   const stemmedTokens = tokens.map(softStem);
 
-  const matched: ProblemCategory[] = [];
+  const categories: ProblemCategory[] = [];
+  const matchedKeywords: Partial<Record<ProblemCategory, string[]>> = {};
 
   for (const [category, keywords] of Object.entries(KEYWORDS) as [ProblemCategory, string[]][]) {
-    let hit = false;
+    const hits: string[] = [];
 
     for (const kw of keywords) {
       if (kw.includes(" ")) {
-        // Frase multi-word: cerca come substring nel testo normalizzato
-        if (hasPhrase(raw, kw)) {
-          hit = true;
-          break;
-        }
+        if (hasPhrase(raw, kw)) hits.push(kw);
       } else {
-        // Parola singola (già stem-ridotta): fuzzy token match
-        if (matchesKeyword(tokens, stemmedTokens, kw)) {
-          hit = true;
-          break;
-        }
+        if (matchesKeyword(tokens, stemmedTokens, kw)) hits.push(kw);
       }
     }
 
-    if (hit) matched.push(category);
+    if (hits.length > 0) {
+      categories.push(category);
+      matchedKeywords[category] = hits;
+    }
   }
 
-  return matched;
+  return { categories, matchedKeywords };
 }
 
 /** Classifica un array di { title, review } in modo sincrono */
@@ -254,4 +264,11 @@ export function classifyBatch(
   reviews: { title: string; review: string }[]
 ): ProblemCategory[][] {
   return reviews.map((r) => classifyReviewProblems(r.title, r.review));
+}
+
+/** Classifica e restituisce anche le keyword matched per evidenziare il testo */
+export function classifyBatchWithEvidence(
+  reviews: { title: string; review: string }[]
+): ClassifyEvidence[] {
+  return reviews.map((r) => classifyWithEvidence(r.title, r.review));
 }
