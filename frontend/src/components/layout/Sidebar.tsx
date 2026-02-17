@@ -36,7 +36,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
     <aside className="w-[300px] shrink-0 bg-bg-secondary border-r border-border h-[100dvh] overflow-y-auto">
       {/* Header — brand title + optional close button (mobile drawer) */}
       <div className="flex items-center justify-between px-5 pt-6 pb-4">
-        <h1 className="text-[28px] font-bold text-text-primary tracking-tight leading-none">App Reviewer</h1>
+        <h1 className="text-[22px] font-bold text-text-primary tracking-tight leading-none">App Reviewer</h1>
         {onClose && (
           <button
             onClick={onClose}
@@ -52,7 +52,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
 
       {/* App Search */}
       <div className="px-5 pb-4">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-4">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-4">
           App Store
         </h2>
 
@@ -84,7 +84,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
 
       {/* Fetch controls */}
       <div className="px-5 py-4">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary mb-3">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-3">
           Fetch Mode
         </h2>
         <div className="flex gap-0.5 mb-4 bg-bg-primary rounded-pill p-1">

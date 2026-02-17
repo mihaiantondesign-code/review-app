@@ -154,8 +154,8 @@ function HighlightedText({
             key={i}
             className="rounded-sm px-0.5 py-px"
             style={{
-              backgroundColor: seg.highlightBg,
-              color: seg.highlightColor ?? "inherit",
+              backgroundColor: seg.highlightBg ? seg.highlightBg.replace(/0\.10\)/, "0.20)") : undefined,
+              color: "inherit",
               fontWeight: 600,
             }}
           >
@@ -215,10 +215,10 @@ function BacklogReviewCard({
     <div className="bg-bg-primary rounded-xl border border-border p-5" style={{ boxShadow: "var(--shadow-sm)" }}>
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <StarRating rating={review.rating} size="sm" />
+          <div className="flex items-center gap-2 mb-1.5">
+            <StarRating rating={review.rating} size="sm" colored />
           </div>
-          <h4 className="text-[16px] font-semibold text-[#0051B3] mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
+          <h4 className="text-[15px] font-semibold text-text-primary mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
           <p className="text-sm text-text-secondary leading-relaxed">
             <HighlightedText text={truncated} layers={highlightLayers} />
             {isLong && (
@@ -233,23 +233,23 @@ function BacklogReviewCard({
             </p>
           )}
         </div>
-        <div className="flex sm:flex-col gap-x-4 gap-y-2 flex-wrap sm:shrink-0 sm:w-[160px] sm:border-l sm:border-border sm:pl-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-border">
+        <div className="flex sm:flex-col gap-x-4 gap-y-2 flex-wrap sm:shrink-0 sm:w-[148px] sm:border-l sm:border-border sm:pl-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-border">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-0.5">Published</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-0.5">Published</p>
             <p className="text-sm font-medium text-text-primary">{formatDate(review.date)}</p>
           </div>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-0.5">Author</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-0.5">Author</p>
             <p className="text-sm font-medium text-text-primary truncate">{review.author || "—"}</p>
           </div>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-0.5">Sentiment</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-0.5">Sentiment</p>
             <p className={`text-sm font-medium ${sentimentColor}`}>{sentimentLabel}</p>
           </div>
           {visibleCategories.length > 0 && (
             <div>
               <div className="flex items-center gap-1.5 mb-1">
-                <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary">Problem</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary">Problem</p>
                 {/* Confidence badge */}
                 <span
                   className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
@@ -290,10 +290,10 @@ function InsightReviewCard({ review }: { review: Review }) {
     <div className="bg-bg-primary rounded-xl border border-border p-5" style={{ boxShadow: "var(--shadow-sm)" }}>
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <StarRating rating={review.rating} size="sm" />
+          <div className="flex items-center gap-2 mb-1.5">
+            <StarRating rating={review.rating} size="sm" colored />
           </div>
-          <h4 className="text-[16px] font-semibold text-[#0051B3] mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
+          <h4 className="text-[15px] font-semibold text-text-primary mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
           <p className="text-sm text-text-secondary leading-relaxed">
             {text}
             {isLong && (
@@ -310,7 +310,7 @@ function InsightReviewCard({ review }: { review: Review }) {
             { label: "Sentiment", value: sentimentLabel, valueClass: sentimentColor },
           ].map(({ label, value, valueClass }) => (
             <div key={label}>
-              <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-0.5">{label}</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-0.5">{label}</p>
               <p className={`text-sm font-medium truncate ${valueClass ?? "text-text-primary"}`}>{value}</p>
             </div>
           ))}

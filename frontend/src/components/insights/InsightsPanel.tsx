@@ -11,9 +11,11 @@ import type { Review, SentimentResult, AdjustedMetrics, Theme } from "@/types";
 interface InsightsPanelProps {
   reviews: Review[];
   source?: "appstore" | "trustpilot";
+  /** When true, hides the top stat row (avg/positive/negative/sentiment) */
+  hideStatRow?: boolean;
 }
 
-export function InsightsPanel({ reviews, source = "appstore" }: InsightsPanelProps) {
+export function InsightsPanel({ reviews, source = "appstore", hideStatRow = false }: InsightsPanelProps) {
   const [sentiment, setSentiment] = useState<SentimentResult | null>(null);
   const [adjustedMetrics, setAdjustedMetrics] = useState<AdjustedMetrics | null>(null);
   const [problems, setProblems] = useState<Theme[]>([]);
@@ -74,35 +76,37 @@ export function InsightsPanel({ reviews, source = "appstore" }: InsightsPanelPro
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-5 flex-wrap">
-        <div>
-          <p className="text-sm text-text-secondary mb-0.5">Avg Rating</p>
-          <p className="text-xl font-bold text-text-primary tabular-nums">{avgRating.toFixed(1)} ★</p>
+      {!hideStatRow && (
+        <div className="flex items-center gap-5 flex-wrap">
+          <div>
+            <p className="text-sm text-text-secondary mb-0.5">Avg Rating</p>
+            <p className="text-xl font-bold text-text-primary tabular-nums">{avgRating.toFixed(1)} ★</p>
+          </div>
+          <div className="w-px h-9 bg-border shrink-0" />
+          <div>
+            <p className="text-sm text-text-secondary mb-0.5">Positive (4-5★)</p>
+            <p className="text-xl font-bold text-positive tabular-nums">{positivePct.toFixed(0)}%</p>
+          </div>
+          <div className="w-px h-9 bg-border shrink-0" />
+          <div>
+            <p className="text-sm text-text-secondary mb-0.5">Negative (1-2★)</p>
+            <p className="text-xl font-bold text-negative tabular-nums">{negativePct.toFixed(0)}%</p>
+          </div>
+          {sentiment && (
+            <>
+              <div className="w-px h-9 bg-border shrink-0" />
+              <div>
+                <p className="text-sm text-text-secondary mb-0.5">Sentiment</p>
+                <p className="text-xl font-bold text-text-primary tabular-nums">
+                  {sentimentEmoji[sentiment.label] || ""} {sentiment.label}
+                </p>
+              </div>
+            </>
+          )}
         </div>
-        <div className="w-px h-9 bg-border shrink-0" />
-        <div>
-          <p className="text-sm text-text-secondary mb-0.5">Positive (4-5★)</p>
-          <p className="text-xl font-bold text-positive tabular-nums">{positivePct.toFixed(0)}%</p>
-        </div>
-        <div className="w-px h-9 bg-border shrink-0" />
-        <div>
-          <p className="text-sm text-text-secondary mb-0.5">Negative (1-2★)</p>
-          <p className="text-xl font-bold text-negative tabular-nums">{negativePct.toFixed(0)}%</p>
-        </div>
-        {sentiment && (
-          <>
-            <div className="w-px h-9 bg-border shrink-0" />
-            <div>
-              <p className="text-sm text-text-secondary mb-0.5">Sentiment</p>
-              <p className="text-xl font-bold text-text-primary tabular-nums">
-                {sentimentEmoji[sentiment.label] || ""} {sentiment.label}
-              </p>
-            </div>
-          </>
-        )}
-      </div>
+      )}
 
-      <hr className="border-t border-border" />
+      {!hideStatRow && <hr className="border-t border-border" />}
 
       {source === "trustpilot" && (
         <>

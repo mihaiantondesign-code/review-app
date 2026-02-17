@@ -49,37 +49,9 @@ function FetchingCard() {
   );
 }
 
-// ─── Stars breakdown card ─────────────────────────────────────────────────────
-
-function StarsBreakdownCard({ counts, total }: { counts: { rating: number; count: number }[]; total: number }) {
-  const max = Math.max(...counts.map((c) => c.count), 1);
-  return (
-    <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2.5" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-1">Stars Breakdown</p>
-      {[5, 4, 3, 2, 1].map((s) => {
-        const c = counts.find((x) => x.rating === s)!;
-        const pct = total > 0 ? (c.count / total) * 100 : 0;
-        const barPct = (c.count / max) * 100;
-        const color = s >= 4 ? "#34C759" : s === 3 ? "#FF9500" : "#FF3B30";
-        return (
-          <div key={s} className="flex items-center gap-2">
-            <span className="text-sm text-text-secondary w-5 shrink-0">{s}★</span>
-            <div className="flex-1 h-2 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${barPct}%`, backgroundColor: color }} />
-            </div>
-            <span className="text-sm tabular-nums text-text-secondary w-10 text-right shrink-0 font-medium">
-              {c.count.toLocaleString()}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── Sentiment breakdown card ─────────────────────────────────────────────────
 
-function SentimentCard({ reviews }: { reviews: Review[] }) {
+function SentimentCard({ reviews, compact = false }: { reviews: Review[]; compact?: boolean }) {
   const [sentiment, setSentiment] = useState<SentimentResult | null>(null);
 
   useEffect(() => {
@@ -90,7 +62,6 @@ function SentimentCard({ reviews }: { reviews: Review[] }) {
 
   const total = reviews.length;
 
-  // Derive sentiment buckets from rating distribution as proxy when API loads
   const pos = reviews.filter((r) => r.rating >= 4).length;
   const neg = reviews.filter((r) => r.rating <= 2).length;
   const neu = reviews.filter((r) => r.rating === 3).length;
@@ -108,9 +79,30 @@ function SentimentCard({ reviews }: { reviews: Review[] }) {
 
   const maxCount = Math.max(...buckets.map((b) => b.count), 1);
 
+  if (compact) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-0.5">Sentiment</p>
+        {buckets.map((b) => {
+          const pct = total > 0 ? Math.round((b.count / total) * 100) : 0;
+          const barPct = (b.count / maxCount) * 100;
+          return (
+            <div key={b.label} className="flex items-center gap-2">
+              <span className="text-[11px] text-text-tertiary w-12 shrink-0">{b.label}</span>
+              <div className="flex-1 h-1.5 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${barPct}%`, backgroundColor: b.color }} />
+              </div>
+              <span className="text-[11px] tabular-nums text-text-tertiary w-7 text-right shrink-0">{pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2.5" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <p className="text-sm font-semibold uppercase tracking-[0.08em] text-text-tertiary mb-1">Sentiment Breakdown</p>
+      <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-1">Sentiment Breakdown</p>
       {buckets.map((b) => {
         const pct = total > 0 ? Math.round((b.count / total) * 100) : 0;
         const barPct = (b.count / maxCount) * 100;
@@ -145,10 +137,10 @@ function ReviewCard({ review }: { review: Review }) {
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
         {/* Main content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <StarRating rating={review.rating} size="sm" />
+          <div className="flex items-center gap-2 mb-1.5">
+            <StarRating rating={review.rating} size="sm" colored />
           </div>
-          <h4 className="text-[16px] font-semibold text-[#0051B3] mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
+          <h4 className="text-[15px] font-semibold text-text-primary mb-1.5 leading-snug">{review.title || "(no title)"}</h4>
           <p className="text-sm text-text-secondary leading-relaxed">
             {text}
             {isLong && (
@@ -163,7 +155,7 @@ function ReviewCard({ review }: { review: Review }) {
         </div>
 
         {/* Metadata — row on mobile, sidebar on sm+ */}
-        <div className="flex sm:flex-col gap-x-4 gap-y-2 flex-wrap sm:shrink-0 sm:w-[148px] sm:space-y-2 sm:border-l sm:border-border sm:pl-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-border">
+        <div className="flex sm:flex-col gap-x-4 gap-y-2 flex-wrap sm:shrink-0 sm:w-[148px] sm:border-l sm:border-border sm:pl-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-border">
           {[
             { label: "Published", value: formatDate(review.date) },
             { label: "Author", value: review.author || "—" },
@@ -171,7 +163,7 @@ function ReviewCard({ review }: { review: Review }) {
             { label: "Sentiment", value: sentimentLabel, valueClass: sentimentColor },
           ].map(({ label, value, valueClass }) => (
             <div key={label}>
-              <p className="text-sm font-semibold uppercase tracking-[0.06em] text-text-tertiary mb-0.5">{label}</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-0.5">{label}</p>
               <p className={`text-sm font-medium truncate ${valueClass ?? "text-text-primary"}`}>{value}</p>
             </div>
           ))}
@@ -336,7 +328,6 @@ function ReviewListings({ reviews, onDownload }: { reviews: Review[]; onDownload
 export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
   const { reviews, fetchDone, isFetching, selectedApps } = useAppStore();
   const hasDownloaded = useRef(false);
-  const [activeTab, setActiveTab] = useState<"summary" | "trend" | "stars">("summary");
 
   const selectedApp = selectedApps[0] ?? null;
 
@@ -398,8 +389,7 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
             <div>
               <h1 className="text-[22px] font-bold text-text-primary tracking-tight leading-tight">{selectedApp.name}</h1>
               <p className="text-sm text-text-secondary">
-                Reviews — view, search and get stats on reviews with text.{" "}
-                <a href="#" className="text-accent hover:underline">Learn more →</a>
+                View, search and export reviews with text.
               </p>
             </div>
           </div>
@@ -408,79 +398,76 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
           <>
             <h1 className="text-[22px] font-bold text-text-primary tracking-tight mb-1">Reviews</h1>
             <p className="text-sm text-text-secondary">
-              View, search and get stats on reviews with text.{" "}
-              <a href="#" className="text-accent hover:underline">Learn more →</a>
+              View, search and export reviews with text.
             </p>
           </>
         )}
       </div>
 
-      {/* ── 4 stat cards ── */}
+      {/* ── Stats row ── */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-          {/* 1. Total reviews */}
-          <div className="bg-bg-primary rounded-xl border border-border p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-            <p className="text-sm font-semibold uppercase tracking-[0.07em] text-text-tertiary mb-2">Reviews</p>
-            <p className="text-[28px] font-bold text-text-primary leading-none tabular-nums">{stats.total.toLocaleString()}</p>
-            <p className="text-sm text-text-secondary mt-1">For selected range</p>
-          </div>
+        <div className="mb-8">
+          {/* Hero stat + summary bar */}
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-8 mb-6">
+            {/* Hero: avg rating */}
+            <div className="shrink-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-1">Avg Rating</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-[40px] font-bold text-text-primary leading-none tabular-nums">{stats.avg.toFixed(1)}</span>
+                <span className="text-lg text-text-tertiary">★</span>
+              </div>
+              <p className="text-sm text-text-secondary mt-1">{stats.total.toLocaleString()} reviews</p>
+            </div>
 
-          {/* 2. Avg stars */}
-          <div className="bg-bg-primary rounded-xl border border-border p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-            <p className="text-sm font-semibold uppercase tracking-[0.07em] text-text-tertiary mb-2">Avg Stars</p>
-            <p className="text-[28px] font-bold text-text-primary leading-none tabular-nums">{stats.avg.toFixed(1)}</p>
-            <div className="mt-1">
-              <StarRating rating={stats.avg} size="sm" />
+            {/* Divider */}
+            <div className="hidden sm:block w-px self-stretch bg-border shrink-0" />
+
+            {/* Stars breakdown inline */}
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-text-tertiary mb-2">Distribution</p>
+              <div className="space-y-1.5">
+                {[5, 4, 3, 2, 1].map((s) => {
+                  const c = stats.counts.find((x) => x.rating === s)!;
+                  const pct = stats.total > 0 ? (c.count / stats.total) * 100 : 0;
+                  const max = Math.max(...stats.counts.map((x) => x.count), 1);
+                  const barPct = (c.count / max) * 100;
+                  const color = s >= 4 ? "#34C759" : s === 3 ? "#FF9500" : "#FF3B30";
+                  return (
+                    <div key={s} className="flex items-center gap-2">
+                      <span className="text-[11px] font-medium text-text-tertiary w-4 shrink-0 tabular-nums">{s}★</span>
+                      <div className="flex-1 h-1.5 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${barPct}%`, backgroundColor: color }} />
+                      </div>
+                      <span className="text-[11px] tabular-nums text-text-tertiary w-8 text-right shrink-0">{pct.toFixed(0)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="hidden sm:block w-px self-stretch bg-border shrink-0" />
+
+            {/* Sentiment */}
+            <div className="shrink-0 sm:w-[180px]">
+              <SentimentCard reviews={reviews} compact />
             </div>
           </div>
-
-          {/* 3. Stars breakdown */}
-          <StarsBreakdownCard counts={stats.counts} total={stats.total} />
-
-          {/* 4. Sentiment breakdown */}
-          <SentimentCard reviews={reviews} />
         </div>
       )}
 
-      {/* ── Tab nav ── */}
-      <div className="flex gap-0 border-b border-border mb-6">
-        {(["summary", "trend", "stars"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-3 text-[15px] font-medium capitalize transition-all border-b-2 -mb-px ${
-              activeTab === tab
-                ? "border-text-primary text-text-primary"
-                : "border-transparent text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
+      {/* ── Insights panel ── */}
+      <div className="mb-10">
+        <InsightsPanel reviews={reviews} hideStatRow />
       </div>
 
-      {/* ── Tab content ── */}
-      {activeTab === "summary" && (
-        <div className="space-y-10">
-          <ReviewListings reviews={reviews} onDownload={handleDownload} />
-        </div>
-      )}
+      {/* ── Version trends ── */}
+      <div className="mb-10">
+        <VersionInsights reviews={reviews} />
+      </div>
 
-      {activeTab === "trend" && (
-        <div className="space-y-10">
-          <section className="bg-bg-secondary rounded-lg p-4 sm:p-6">
-            <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-6">Insights</h3>
-            <InsightsPanel reviews={reviews} />
-          </section>
-          <VersionInsights reviews={reviews} />
-        </div>
-      )}
-
-      {activeTab === "stars" && (
-        <div className="space-y-10">
-          <VersionInsights reviews={reviews} />
-        </div>
-      )}
+      {/* ── Review listings ── */}
+      <ReviewListings reviews={reviews} onDownload={handleDownload} />
     </div>
   );
 }

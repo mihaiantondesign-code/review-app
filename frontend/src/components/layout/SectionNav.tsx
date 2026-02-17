@@ -1,6 +1,5 @@
 "use client";
 
-import * as Tabs from "@radix-ui/react-tabs";
 import { useAppStore } from "@/store/useAppStore";
 import type { ActiveSection } from "@/types";
 
@@ -15,18 +14,23 @@ export function SectionNav() {
   const { activeSection, setActiveSection } = useAppStore();
 
   return (
-    <Tabs.Root value={activeSection} onValueChange={(v) => setActiveSection(v as ActiveSection)}>
-      <Tabs.List className="flex bg-bg-secondary rounded-pill p-1 gap-1 w-full sm:w-fit">
-        {sections.map((s) => (
-          <Tabs.Trigger
+    <div className="flex border-b border-border -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+      {sections.map((s) => {
+        const active = activeSection === s.value;
+        return (
+          <button
             key={s.value}
-            value={s.value}
-            className="flex-1 sm:flex-none px-3 sm:px-6 py-2.5 text-sm font-medium rounded-pill transition-colors data-[state=active]:bg-[rgba(0,0,0,0.06)] data-[state=active]:text-text-primary data-[state=active]:font-semibold text-text-secondary hover:text-text-primary"
+            onClick={() => setActiveSection(s.value)}
+            className={`relative px-3 sm:px-4 py-3 text-sm transition-colors duration-150 -mb-px border-b-2 whitespace-nowrap min-h-[44px] ${
+              active
+                ? "border-text-primary text-text-primary font-semibold"
+                : "border-transparent text-text-tertiary hover:text-text-secondary"
+            }`}
           >
             {s.label}
-          </Tabs.Trigger>
-        ))}
-      </Tabs.List>
-    </Tabs.Root>
+          </button>
+        );
+      })}
+    </div>
   );
 }
