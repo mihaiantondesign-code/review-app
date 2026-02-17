@@ -12,6 +12,7 @@ import { useInsightQuery } from "@/hooks/useInsightQuery";
 import { StarRating } from "@/components/shared/StarRating";
 import { formatDate } from "@/lib/utils";
 import type { ProblemCategory, InsightDimension, Review } from "@/types";
+import { ComparisonSection } from "@/components/sections/ComparisonSection";
 
 // ─── Constants (Backlog) ──────────────────────────────────────────────────────
 
@@ -580,6 +581,12 @@ export function AnalysisSection() {
 
   return (
     <div>
+      {/* ══ COMPARISON ══════════════════════════════════════════════════════════ */}
+      <ComparisonSection />
+
+      {/* ── Divider ────────────────────────────────────────────────────────── */}
+      <div className="my-10 border-t border-border" />
+
       {/* ── Page header ────────────────────────────────────────────────────── */}
       <div className="mb-6">
         <h1 className="text-[22px] font-bold text-text-primary tracking-tight mb-1">Analysis</h1>

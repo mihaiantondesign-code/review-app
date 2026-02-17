@@ -162,8 +162,8 @@ export function ComparisonSection() {
     <div>
       {/* Input controls */}
       <section className="mb-8">
-        <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
-          Compare Multiple Apps
+        <h3 className="text-[18px] font-bold text-text-primary tracking-tight mb-1">
+          Comparison
         </h3>
         <p className="text-sm text-text-secondary leading-relaxed mb-5">
           Search for apps or enter an App Store ID directly (the number in any App Store URL:

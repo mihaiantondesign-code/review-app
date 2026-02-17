@@ -6,7 +6,6 @@ import type { ActiveSection } from "@/types";
 const sections: { value: ActiveSection; label: string }[] = [
   { value: "appstore", label: "App Store" },
   { value: "trustpilot", label: "Trustpilot" },
-  { value: "comparison", label: "Comparison" },
   { value: "analysis", label: "Analysis" },
 ];
 

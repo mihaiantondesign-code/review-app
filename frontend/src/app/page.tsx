@@ -5,7 +5,6 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { SectionNav } from "@/components/layout/SectionNav";
 import { AppStoreSection } from "@/components/sections/AppStoreSection";
 import { TrustpilotSection } from "@/components/sections/TrustpilotSection";
-import { ComparisonSection } from "@/components/sections/ComparisonSection";
 import { AnalysisSection } from "@/components/sections/AnalysisSection";
 import { AppMultiSelectPicker } from "@/components/shared/AppMultiSelectPicker";
 import { CountryField } from "@/components/shared/CountryField";
@@ -176,7 +175,6 @@ export default function Home() {
             <div className="mt-5">
               {activeSection === "appstore" && <AppStoreSection onDownload={showModal} />}
               {activeSection === "trustpilot" && <TrustpilotSection />}
-              {activeSection === "comparison" && <ComparisonSection />}
               {activeSection === "analysis" && <AnalysisSection />}
             </div>
           </div>
