@@ -459,7 +459,12 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
 
       {/* ── Insights panel ── */}
       <div className="mb-10">
-        <InsightsPanel reviews={reviews} hideStatRow />
+        <InsightsPanel
+          reviews={reviews}
+          hideStatRow
+          storeRating={selectedApp?.rating}
+          storeRatingsCount={selectedApp?.ratings_count}
+        />
       </div>
 
       {/* ── Version trends ── */}

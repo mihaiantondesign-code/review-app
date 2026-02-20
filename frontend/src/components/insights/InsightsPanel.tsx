@@ -13,9 +13,13 @@ interface InsightsPanelProps {
   source?: "appstore" | "trustpilot";
   /** When true, hides the top stat row (avg/positive/negative/sentiment) */
   hideStatRow?: boolean;
+  /** Global App Store rating from the store listing */
+  storeRating?: number;
+  /** Total number of ratings on the App Store listing */
+  storeRatingsCount?: number;
 }
 
-export function InsightsPanel({ reviews, source = "appstore", hideStatRow = false }: InsightsPanelProps) {
+export function InsightsPanel({ reviews, source = "appstore", hideStatRow = false, storeRating, storeRatingsCount }: InsightsPanelProps) {
   const [sentiment, setSentiment] = useState<SentimentResult | null>(null);
   const [adjustedMetrics, setAdjustedMetrics] = useState<AdjustedMetrics | null>(null);
   const [problems, setProblems] = useState<Theme[]>([]);
@@ -117,7 +121,7 @@ export function InsightsPanel({ reviews, source = "appstore", hideStatRow = fals
 
       {source === "appstore" && adjustedMetrics && adjustedMetrics.original_count > 0 && (
         <>
-          <AdjustedRatingCard metrics={adjustedMetrics} />
+          <AdjustedRatingCard metrics={adjustedMetrics} storeRating={storeRating} storeRatingsCount={storeRatingsCount} />
           <hr className="border-t border-border" />
         </>
       )}

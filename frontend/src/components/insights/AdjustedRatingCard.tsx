@@ -12,9 +12,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 interface AdjustedRatingCardProps {
   metrics: AdjustedMetrics;
+  /** The global App Store rating shown on the store listing page */
+  storeRating?: number;
+  /** Total number of ratings on the App Store listing */
+  storeRatingsCount?: number;
 }
 
-export function AdjustedRatingCard({ metrics }: AdjustedRatingCardProps) {
+export function AdjustedRatingCard({ metrics, storeRating, storeRatingsCount }: AdjustedRatingCardProps) {
   const deltaSign = metrics.rating_delta >= 0 ? "+" : "";
   const deltaContext =
     metrics.rating_delta > 0
@@ -30,19 +34,30 @@ export function AdjustedRatingCard({ metrics }: AdjustedRatingCardProps) {
   return (
     <div>
       <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
-        Adjusted Rating
+        Ratings
       </h3>
       <p className="text-sm text-text-secondary leading-relaxed mb-4">
-        Excludes reviews about pricing, support, policies, and physical locations
-        to isolate app-specific feedback.
+        Three views of your rating: the global App Store score, the average from fetched reviews, and an adjusted score that excludes off-topic feedback.
       </p>
 
-      {/* Top 3 stats — divider separated */}
+      {/* 3 rating stats — divider separated */}
       <div className="flex items-start gap-5 flex-wrap mb-4">
+        {storeRating !== undefined && (
+          <>
+            <div>
+              <p className="text-sm text-text-secondary mb-0.5">App Store Rating</p>
+              <p className="text-xl font-bold text-text-primary tabular-nums">{storeRating.toFixed(1)} ★</p>
+              {storeRatingsCount !== undefined && (
+                <p className="text-sm text-text-tertiary">{storeRatingsCount.toLocaleString()} ratings</p>
+              )}
+            </div>
+            <div className="w-px h-9 bg-border shrink-0 mt-1" />
+          </>
+        )}
         <div>
-          <p className="text-sm text-text-secondary mb-0.5">Original Rating</p>
+          <p className="text-sm text-text-secondary mb-0.5">Qualitative Rating</p>
           <p className="text-xl font-bold text-text-primary tabular-nums">{metrics.original_avg.toFixed(2)} ★</p>
-          <p className="text-sm text-text-tertiary">{metrics.original_count} reviews</p>
+          <p className="text-sm text-text-tertiary">{metrics.original_count} reviews fetched</p>
         </div>
         <div className="w-px h-9 bg-border shrink-0 mt-1" />
         <div>
