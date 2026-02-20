@@ -467,13 +467,13 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
         <VersionInsights reviews={reviews} />
       </div>
 
-      {/* ── Review listings ── */}
-      <ReviewListings reviews={reviews} onDownload={handleDownload} />
-
       {/* ── Backlog ── */}
-      <div className="mt-12 border-t border-border pt-10">
+      <div className="mb-12 border-t border-border pt-10">
         <BacklogSection />
       </div>
+
+      {/* ── Review listings ── */}
+      <ReviewListings reviews={reviews} onDownload={handleDownload} />
     </div>
   );
 }
