@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { StarRating } from "@/components/shared/StarRating";
 import { InsightsPanel } from "@/components/insights/InsightsPanel";
 import { VersionInsights } from "@/components/insights/VersionInsights";
+import { BacklogSection } from "@/components/sections/BacklogSection";
 import { analyzeSentiment } from "@/lib/api";
 import { exportExcel } from "@/lib/api";
 import { downloadBlob, formatDate } from "@/lib/utils";
@@ -468,6 +469,11 @@ export function AppStoreSection({ onDownload }: { onDownload?: () => void }) {
 
       {/* ── Review listings ── */}
       <ReviewListings reviews={reviews} onDownload={handleDownload} />
+
+      {/* ── Backlog ── */}
+      <div className="mt-12 border-t border-border pt-10">
+        <BacklogSection />
+      </div>
     </div>
   );
 }
