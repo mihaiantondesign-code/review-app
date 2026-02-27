@@ -9,7 +9,7 @@ from app.models.schemas import (
 from app.services.sentiment import compute_sentiment, extract_keywords
 from app.services.classification import compute_adjusted_metrics
 from app.services.themes import cluster_reviews_by_theme
-from app.services.problem_classifier import classify_batch
+from app.services.problem_classifier import classify_batch_async
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
@@ -42,11 +42,11 @@ def keywords(req: KeywordsRequest):
 
 
 @router.post("/classify-problems")
-def classify_problems(req: ClassifyProblemsRequest):
+async def classify_problems(req: ClassifyProblemsRequest):
     """
-    Classify review texts into problem categories using an LLM.
-    Returns one array of category strings per input text.
-    Requires ANTHROPIC_API_KEY env var; returns empty arrays if not set.
+    Classify review texts into problem categories using DeepSeek.
+    All batches run concurrently — total time ≈ one batch regardless of volume.
+    Requires DEEPSEEK_API_KEY env var; returns empty arrays if not set.
     """
-    results = classify_batch(req.texts)
+    results = await classify_batch_async(req.texts)
     return [{"categories": cats} for cats in results]
