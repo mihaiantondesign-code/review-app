@@ -1,70 +1,102 @@
 """
-LLM-based problem category classifier using Anthropic claude-haiku.
-Uses httpx (already in deps) to call the Anthropic Messages API directly.
+LLM-based problem category classifier using DeepSeek.
+Uses the OpenAI-compatible DeepSeek API for efficient batch classification.
 """
 import os
 import json
-import httpx
+from openai import OpenAI
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 
-VALID_CATEGORIES = {"TECHNICAL", "DESIGN", "CUSTOMER_EXPERIENCE", "PRICING", "PERFORMANCE"}
+VALID_CATEGORIES = {
+    "BUGS_TECNICI",
+    "ONBOARDING_SETUP",
+    "UX_USABILITA",
+    "FEATURES_FUNZIONALITA",
+    "CUSTOMER_SUPPORT",
+}
 
-SYSTEM_PROMPT = """You are classifying app store reviews into problem categories.
+SYSTEM_PROMPT = """Sei un assistente che classifica recensioni di app mobile in categorie di problemi.
 
-Categories and their definitions:
-- TECHNICAL: crashes, bugs, errors, broken features, login failures, sync issues, blank screens
-- DESIGN: confusing navigation, hard to find features, poor layout, unintuitive flows, visual bugs, accessibility
-- CUSTOMER_EXPERIENCE: poor support, refund issues, account problems, missing expected features, confusing onboarding
-- PRICING: cost complaints, unexpected charges, paywalled features, free tier limitations, subscription issues
-- PERFORMANCE: slow loading, lag, freezing, battery drain, high data usage
+Categorie disponibili:
+- BUGS_TECNICI: crash, errori tecnici, bug, funzionalità rotte, schermata bianca, loop infinito, errori di accesso
+- ONBOARDING_SETUP: difficoltà di registrazione, primo accesso, attivazione account, configurazione iniziale, verifica identità
+- UX_USABILITA: navigazione confusa, layout difficile, flussi poco intuitivi, accessibilità, interfaccia non chiara
+- FEATURES_FUNZIONALITA: funzionalità mancanti, feature non funzionanti come atteso, funzioni rimosse, limitazioni eccessive
+- CUSTOMER_SUPPORT: supporto clienti assente o scadente, nessuna risposta, rimborsi negati, account bloccato
 
-Rules:
-- A review can match multiple categories
-- If the review is positive or describes no problem, return []
-- Return ONLY a JSON array of matching category strings, nothing else
+Regole:
+- Una recensione può avere massimo 2 categorie
+- Se la recensione è positiva o non descrive problemi specifici, l'array è vuoto []
+- Restituisci SOLO l'oggetto JSON richiesto, nient'altro"""
 
-Examples:
-"The app crashes every time I try to log in" → ["TECHNICAL"]
-"Way too expensive and keeps crashing" → ["TECHNICAL", "PRICING"]
-"Love the app!" → []
-"Support never responded to my ticket and the checkout flow is confusing" → ["CUSTOMER_EXPERIENCE", "DESIGN"]"""
+BATCH_SIZE = 30
 
 
-def classify_single(review_text: str) -> list[str]:
-    """Classify a single review text. Returns list of matching category strings."""
-    if not ANTHROPIC_API_KEY:
-        return []
+def _classify_chunk(texts: list[str]) -> list[list[str]]:
+    """Send one chunk of reviews to DeepSeek, return categories for each."""
+    if not DEEPSEEK_API_KEY:
+        return [[] for _ in texts]
 
-    prompt = f'Review to classify: "{review_text}"'
+    client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+
+    numbered = "\n".join(f'{i + 1}. "{t}"' for i, t in enumerate(texts))
+    user_msg = (
+        f"Classifica queste {len(texts)} recensioni.\n"
+        f'Restituisci un oggetto JSON: {{"results": [array1, array2, ...]}} '
+        f"dove ogni elemento è l'array di categorie per quella recensione (o [] se nessun problema).\n\n"
+        f"{numbered}"
+    )
 
     try:
-        resp = httpx.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-haiku-4-5",
-                "max_tokens": 100,
-                "system": SYSTEM_PROMPT,
-                "messages": [{"role": "user", "content": prompt}],
-            },
-            timeout=15.0,
+        resp = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+            max_tokens=800,
+            temperature=0,
+            response_format={"type": "json_object"},
         )
-        resp.raise_for_status()
-        data = resp.json()
-        raw = data["content"][0]["text"].strip()
-        categories = json.loads(raw)
-        if not isinstance(categories, list):
-            return []
-        return [c for c in categories if c in VALID_CATEGORIES]
+        raw = resp.choices[0].message.content.strip()
+        data = json.loads(raw)
+
+        # Extract the results list from the JSON object
+        result_list = None
+        if isinstance(data, list):
+            result_list = data
+        elif isinstance(data, dict):
+            for key in ("results", "classifications", "categories", "data"):
+                if key in data and isinstance(data[key], list):
+                    result_list = data[key]
+                    break
+            if result_list is None:
+                for v in data.values():
+                    if isinstance(v, list):
+                        result_list = v
+                        break
+
+        if result_list is None:
+            return [[] for _ in texts]
+
+        # Pad to correct length, filter to valid categories only
+        padded = (result_list + [[] for _ in texts])[: len(texts)]
+        return [
+            [c for c in (item if isinstance(item, list) else []) if c in VALID_CATEGORIES]
+            for item in padded
+        ]
     except Exception:
-        return []
+        return [[] for _ in texts]
 
 
 def classify_batch(review_texts: list[str]) -> list[list[str]]:
-    """Classify a batch of review texts. Returns one result list per input text."""
-    return [classify_single(text) for text in review_texts]
+    """Classify a batch of review texts. Returns one category list per input text."""
+    if not review_texts:
+        return []
+
+    results: list[list[str]] = []
+    for i in range(0, len(review_texts), BATCH_SIZE):
+        chunk = review_texts[i : i + BATCH_SIZE]
+        results.extend(_classify_chunk(chunk))
+    return results

@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactElement } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { classifyBatch } from "@/lib/classifier";
+import { classifyProblems } from "@/lib/api";
 import { ProblemChip, CATEGORY_CONFIG } from "@/components/shared/ProblemChip";
 import { StarRating } from "@/components/shared/StarRating";
 import { formatDate } from "@/lib/utils";
-import type { ProblemCategory, ClassifiedReview, Review } from "@/types";
+import type { ProblemCategory, ClassifiedReview } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -284,23 +284,46 @@ export function BacklogSection() {
 
   // ─── Gate: classification runs only on explicit user request ──────────────
   const [hasClassified, setHasClassified] = useState(false);
+  const [classifying, setClassifying] = useState(false);
+  const [classifiedReviews, setClassifiedReviews] = useState<ClassifiedReview[]>([]);
 
-  // Reset gate when new reviews arrive
+  // Reset when new reviews arrive
   useEffect(() => {
     setHasClassified(false);
+    setClassifying(false);
+    setClassifiedReviews([]);
     setActiveCategories(new Set());
   }, [reviews]);
 
-  // ─── Classify synchronously (local rule-based, instant) ───────────────────
-  const classifiedReviews = useMemo<ClassifiedReview[]>(() => {
-    if (!hasClassified || reviews.length === 0) return [];
-    const results = classifyBatch(reviews);
-    return reviews.map((r, i) => ({
-      ...r,
-      problem_categories: results[i],
-      classification_status: "classified" as const,
-    }));
-  }, [reviews, hasClassified]);
+  // ─── Async classification via DeepSeek backend ────────────────────────────
+  const handleClassify = useCallback(async () => {
+    if (reviews.length === 0) return;
+    setHasClassified(true);
+    setClassifying(true);
+    try {
+      const texts = reviews.map((r) => `${r.title} ${r.review}`);
+      const results = await classifyProblems(texts);
+      const classified: ClassifiedReview[] = reviews.map((r, i) => ({
+        ...r,
+        problem_categories: (results[i]?.categories ?? []).filter(
+          (c): c is ProblemCategory => ALL_CATEGORIES.includes(c as ProblemCategory)
+        ),
+        classification_status: "classified" as const,
+      }));
+      setClassifiedReviews(classified);
+    } catch (err) {
+      console.error("Classification error:", err);
+      setClassifiedReviews(
+        reviews.map((r) => ({
+          ...r,
+          problem_categories: [],
+          classification_status: "failed" as const,
+        }))
+      );
+    } finally {
+      setClassifying(false);
+    }
+  }, [reviews]);
 
   // ─── Compute category stats ────────────────────────────────────────────────
   const classified = classifiedReviews;
@@ -418,7 +441,7 @@ export function BacklogSection() {
               Classifica {reviews.length.toLocaleString()} recensioni
             </p>
             <p className="text-sm text-text-tertiary max-w-sm mx-auto mb-4">
-              Analisi locale con stemming italiano — nessuna API richiesta.
+              Classificazione semantica via AI — identifica problemi reali anche in frasi non standard.
             </p>
             {/* Category pills */}
             <div className="flex flex-wrap justify-center gap-1.5 mb-1">
@@ -439,7 +462,7 @@ export function BacklogSection() {
           </div>
           <button
             type="button"
-            onClick={() => setHasClassified(true)}
+            onClick={handleClassify}
             className="px-6 py-3 text-sm font-semibold text-white bg-text-primary rounded-pill hover:opacity-90 active:scale-[0.97] transition-all shadow-sm"
           >
             Get Clusterization
@@ -447,8 +470,21 @@ export function BacklogSection() {
         </div>
       )}
 
-      {/* ─── Full body (only after classification) ───────────────────────────── */}
-      {hasClassified && (
+      {/* ─── Loading state ────────────────────────────────────────────────────── */}
+      {classifying && (
+        <div className="flex flex-col items-center justify-center py-20 gap-4 rounded-2xl border border-dashed border-border bg-bg-secondary text-center">
+          <div className="w-10 h-10 rounded-full border-2 border-border border-t-text-primary animate-spin" />
+          <div>
+            <p className="text-[15px] font-semibold text-text-primary mb-1">Classificazione in corso…</p>
+            <p className="text-sm text-text-tertiary">
+              Analisi di {reviews.length.toLocaleString()} recensioni con AI — può richiedere qualche secondo.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Full body (only after classification completes) ────────────────── */}
+      {hasClassified && !classifying && (
         <>
       {/* Summary bar */}
       <div className="mb-6">
