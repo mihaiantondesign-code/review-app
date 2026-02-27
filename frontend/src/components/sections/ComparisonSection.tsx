@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCompare } from "@/hooks/useCompare";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -162,8 +162,8 @@ export function ComparisonSection() {
     <div>
       {/* Input controls */}
       <section className="mb-8">
-        <h3 className="text-[16px] font-semibold text-[#0051B3] tracking-tight mb-1">
-          Compare Multiple Apps
+        <h3 className="text-[18px] font-bold text-text-primary tracking-tight mb-1">
+          Comparison
         </h3>
         <p className="text-sm text-text-secondary leading-relaxed mb-5">
           Search for apps or enter an App Store ID directly (the number in any App Store URL:
@@ -425,11 +425,13 @@ function HeadToHead({
   const appList = Object.entries(compData).filter(([, reviews]) => reviews.length > 0);
 
   const [themes, setThemes] = useState<Record<string, { problems: Theme[]; wins: Theme[] }>>({});
-  const [loaded, setLoaded] = useState(false);
+  const [loadedKey, setLoadedKey] = useState<string>("");
 
-  // Load themes on mount
-  useMemo(() => {
-    if (loaded) return;
+  // Stable key for the current app list — re-fetch only when apps change
+  const appListKey = appList.map(([aid]) => aid).sort().join(",");
+
+  useEffect(() => {
+    if (appList.length < 2 || appListKey === loadedKey) return;
     const loadAll = async () => {
       const result: Record<string, { problems: Theme[]; wins: Theme[] }> = {};
       for (const [aid, reviews] of appList) {
@@ -444,10 +446,11 @@ function HeadToHead({
         }
       }
       setThemes(result);
-      setLoaded(true);
+      setLoadedKey(appListKey);
     };
-    if (appList.length >= 2) loadAll();
-  }, [appList.length]);
+    loadAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appListKey]);
 
   if (appList.length < 2) {
     return (

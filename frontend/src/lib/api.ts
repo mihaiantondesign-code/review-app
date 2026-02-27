@@ -146,6 +146,10 @@ export async function exportExcel(
   return res.blob();
 }
 
+export async function classifyProblems(texts: string[]): Promise<{ categories: string[] }[]> {
+  return postJSON<{ categories: string[] }[]>("/api/analysis/classify-problems", { texts });
+}
+
 export async function exportComparisonExcel(
   apps: Record<string, { date: string; rating: number; title: string; review: string; author: string; version: string }[]>,
   appNames: Record<string, string>

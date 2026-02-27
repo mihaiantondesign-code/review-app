@@ -68,7 +68,35 @@ export interface FetchProgress {
   message: string;
 }
 
-export type ActiveSection = "appstore" | "trustpilot" | "comparison" | "insights";
+export type ActiveSection = "appstore" | "trustpilot" | "comparison" | "analysis";
+
+export type ProblemCategory =
+  | "BUGS_TECNICI"
+  | "ONBOARDING_SETUP"
+  | "UX_USABILITA"
+  | "FEATURES_FUNZIONALITA"
+  | "CUSTOMER_SUPPORT";
+
+export type ClassificationStatus = "pending" | "classified" | "failed" | "unclassified";
+
+/** Review enriched with problem categories (client-side only, not persisted) */
+export interface ClassifiedReview extends Review {
+  problem_categories: ProblemCategory[];
+  classification_status: ClassificationStatus;
+}
+
+export interface BacklogCategoryItem {
+  category: ProblemCategory;
+  count: number;
+  percentage: number;
+  sentiment: { positive: number; neutral: number; negative: number };
+  top_topics: string[];
+}
+
+export interface BacklogQuery {
+  include_categories: ProblemCategory[];
+  exclude_categories: ProblemCategory[];
+}
 
 export type InsightDimension = "topics" | "custom_topics" | "tags";
 
